@@ -1,0 +1,76 @@
+#!/usr/bin/perl
+
+# gmail-spamassassin - apply spamassassin to gmail INBOX
+# uses code from Net::IMAP::Simple docs
+# v0.1 by James Powell - jamespo [at] gmail [dot] com - Jun 2009 
+# licensed under GPL v3
+
+# USAGE: run this in cron
+# */15 * * * *  /usr/local/bin/gmail-spamassassin
+
+# conf file lives in ~/.priv/gmailrc
+# FORMAT user:pass
+
+use Net::IMAP::Simple::SSL;
+use Data::Dumper; # DEBUG
+use Mail::SpamAssassin;
+use Encode;
+use strict;
+
+# load conf file 
+my $conf = $ENV{HOME} . '/.priv/gmailrc';
+die "$conf does not exist" unless (-f $conf);
+open(CONF, $conf);
+my $cl = <CONF>;
+chomp($cl);
+my ($user, $pass) = split /:/, $cl;
+close(CONF);
+my $server = 'imap.gmail.com';
+
+my @mails;
+
+# Create the object
+my $imap = Net::IMAP::Simple::SSL->new($server) ||
+    die "Unable to connect to IMAP: $Net::IMAP::Simple::SSL::errstr\n";
+
+# Log on
+if(!$imap->login($user, $pass)){
+    print STDERR "Login failed: " . $imap->errstr . "\n";
+    exit(64);
+}
+
+my $spamtest = Mail::SpamAssassin->new();
+
+my $nm = $imap->select('INBOX');
+
+# loop round INBOX
+for(my $i = 1; $i <= $nm; $i++){
+    #next if ($imap->seen($i)); # skip seen
+    my @maillines =  @{ $imap->get($i) };
+    pop @maillines; # get rid of flags line
+    my $subj;
+    # get subject
+    foreach (@maillines) {
+	if (/^Subject: ?(.*)$/i) {
+	    $subj = decode("MIME-Header", $1);
+	    last;
+	} 
+    }
+    my $msg = join '', @maillines;
+
+    my $status = $spamtest->check_message_text($msg);
+
+    if ($status->is_spam()) {
+	print "SPAM detected - Subject: $subj\n";
+    } else {
+	print "CLEAN - Subject: $subj\n";
+    }
+
+    $status->finish();
+}
+
+
+
+$imap->quit;
+print Dumper(\@mails) if ($ENV{DEBUG});
+
