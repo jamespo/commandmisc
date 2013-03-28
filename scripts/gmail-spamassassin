@@ -8,64 +8,75 @@
 # USAGE: run this in cron
 # */15 * * * *  /usr/local/bin/gmail-spamassassin
 
+# In Gmail create a new Label "SpamChecked" - settings "Hide in label list",
+# "Hide in message list", "Show in IMAP" - this allows the script to keep
+# track of checked messages
+
 # conf file lives in ~/.priv/gmailrc
 # FORMAT user:pass
 
-use Net::IMAP::Simple::SSL;
+use lib '.';
+
+use Net::IMAP::Simple::SSL::Gmail;
 use Data::Dumper; # DEBUG
 use Mail::SpamAssassin;
 use Encode;
+use IO::Socket::SSL 'inet4'; # IPv6 breaks connection sometimes
 use strict;
 
 # load conf file 
-my $conf = $ENV{HOME} . '/.priv/gmailrc';
-die "$conf does not exist" unless (-f $conf);
-open(CONF, $conf);
-my $cl = <CONF>;
-chomp($cl);
-my ($user, $pass) = split /:/, $cl;
-close(CONF);
+my ($user, $pass) = @{&loadconf};
 my $server = 'imap.gmail.com';
 
-my @mails;
-
-# Create the object
-my $imap = Net::IMAP::Simple::SSL->new($server) ||
-    die "Unable to connect to IMAP: $Net::IMAP::Simple::SSL::errstr\n";
+my $imap = Net::IMAP::Simple::SSL::Gmail->new($server, debug => $ENV{DEBUG} ? 1 : 0) ||
+    die "Unable to connect to IMAP: $Net::IMAP::Simple::errstr\n";
 
 # Log on
-if(!$imap->login($user, $pass)){
-    print STDERR "Login failed: " . $imap->errstr . "\n";
-    exit(64);
+if(!$imap->login($user, $pass)) {
+    die "Login failed: " . $imap->errstr . "\n";
 }
 
-my $spamtest = Mail::SpamAssassin->new({debug => $ENV{DEBUG} ? 'all' : ''});
+my $spamtest = Mail::SpamAssassin->new({debug => $ENV{DEBUGSA} ? 'all' : ''});
 
 my $nm = $imap->select('INBOX');
+
+#my @boxes   = $imap->mailboxes;
+#print "boxes" . Dumper(\@boxes);
 
 # loop round INBOX
 for(my $i = 1; $i <= $nm; $i++){
     next if ($imap->seen($i)); # skip seen
+    #my @flags = $imap->msg_flags($i, ['(X-GM-LABELS)']);
+
+    print "labels: " . Dumper($imap->get_labels($i)) . "\n";
+    #print "\nflags: " . Dumper(\@flags); # DEBUG
+    #print "Available server flags: " . join(", ", $imap->flags) . "\n";
     my @maillines =  @{ $imap->get($i) };
     pop @maillines; # get rid of flags line
     my $subj;
     # get subject
     foreach (@maillines) {
-	if (/^Subject: ?(.*)$/i) {
-	    $subj = decode("MIME-Header", $1);
-	    last;
-	} 
+	   if (/^Subject: ?(.*)$/i) {
+        $subj = decode("MIME-Header", $1);
+        last;
+	   } 
     }
     my $msg = join '', @maillines;
 
+    print $msg if ($ENV{DEBUG});
+
     my $mail = $spamtest->parse($msg);
-    print Dumper($mail) if ($ENV{DEBUG});
+    print Dumper($mail) if ($ENV{DEBUGSA});
     my $status = $spamtest->check($mail);
 
     if ($status->is_spam()) {
-	print "SPAM detected - Subject: $subj\n";
+	   print "SPAM detected - Subject: $subj\n";
+       # TODO: move to spam folder
     } else {
-	print "CLEAN - Subject: $subj\n";
+	   print "CLEAN - Subject: $subj\n";
+       # reset flag as unread & set SpamChecked label so we don't recheck
+       $imap->sub_flags( $i, qw(\Seen Old) ) or warn $imap->errstr;
+       $imap->copy( $i, 'SpamChecked' ) or warn $imap->errstr;
     }
 
     $status->finish();
@@ -77,3 +88,13 @@ for(my $i = 1; $i <= $nm; $i++){
 $imap->quit;
 
 
+sub loadconf {
+    my $conf = $ENV{HOME} . '/.priv/gmailrc';
+    die "$conf does not exist" unless (-f $conf);
+    open(CONF, $conf);
+    my $cl = <CONF>;
+    chomp($cl);
+    my @userpass = split /:/, $cl;
+    close(CONF);
+    return \@userpass;
+}
