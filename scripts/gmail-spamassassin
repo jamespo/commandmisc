@@ -62,14 +62,16 @@ for (my $i = 1; $i <= $nm; $i++) {
     my $mail = $spamtest->parse($msg);
     my $status = $spamtest->check($mail);
 
+    # reset flag as unread & set SpamChecked label so we don't recheck
+    $imap->sub_flags( $i, qw(\Seen Old) ) or warn $imap->errstr;
+    $imap->copy( $i, $checked_label ) or warn $imap->errstr;
+
     if ($status->is_spam()) {
 	print "SPAM detected - Subject: $subj\n";
-	# TODO: move to spam folder
+	# move to spam folder
+	$imap->copy( $i, '[Gmail]/Spam' ) or warn $imap->errstr;
     } else {
 	print "CLEAN - Subject: $subj\n";
-	# reset flag as unread & set SpamChecked label so we don't recheck
-	$imap->sub_flags( $i, qw(\Seen Old) ) or warn $imap->errstr;
-	$imap->copy( $i, $checked_label ) or warn $imap->errstr;
     }
 
     $status->finish();
@@ -79,7 +81,7 @@ for (my $i = 1; $i <= $nm; $i++) {
 
 
 $imap->quit;
-
+exit(0);
 
 sub loadconf {
     my $conf = $ENV{HOME} . '/.priv/gmailrc';
