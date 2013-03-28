@@ -1,4 +1,4 @@
-package Net::IMAP::Simple::SSL::Gmail;
+package Net::IMAP::Simple::Gmail;
 use Text::ParseWords;
 use strict;
 
