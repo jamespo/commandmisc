@@ -5,18 +5,6 @@
 # v0.1 by James Powell - jamespo [at] gmail [dot] com - Jun 2009 
 # licensed under GPL v3
 
-# USAGE: run this in cron
-# */15 * * * *  /usr/local/bin/gmail-spamassassin
-
-# In Gmail create a new Label "SpamChecked" - settings "Hide in label list",
-# "Hide in message list", "Show in IMAP" - this allows the script to keep
-# track of checked messages
-
-# conf file lives in ~/.priv/gmailrc
-# FORMAT user:pass
-
-use lib '.';
-
 use Net::IMAP::Simple::Gmail;
 use Data::Dumper; # DEBUG
 use Mail::SpamAssassin;
@@ -68,7 +56,6 @@ for (my $i = 1; $i <= $nm; $i++) {
 
     if ($status->is_spam()) {
 	print "SPAM detected - Subject: $subj\n";
-	# move to spam folder
 	$imap->copy( $i, '[Gmail]/Spam' ) or warn $imap->errstr;
     } else {
 	print "CLEAN - Subject: $subj\n";
@@ -77,7 +64,6 @@ for (my $i = 1; $i <= $nm; $i++) {
     $status->finish();
     $mail->finish();
 }
-
 
 
 $imap->quit;
@@ -93,3 +79,51 @@ sub loadconf {
     close(CONF);
     return \@userpass;
 }
+
+
+__END__
+
+=head1 NAME
+
+gmail-spamassassin - run SpamAssassin over your gmail messages and move
+them to spam folder as appropriate
+
+=head1 DESCRIPTION
+
+This script loops round unread messages in your inbox, moving emails detected to be spam to Gmail's spam folder. All checked messages are given the "SpamChecked" label (be sure to create this label).
+
+This scripts uses Net::IMAP::Simple::Gmail which subclasses Net::IMAP::Simple::SSL and provides Gmail specific methods.
+
+=head1 SETUP
+
+Save your google username and password in a file ~/.priv/gmailrc in the format
+username:password - make sure this file is permissioned 0600.
+
+In Gmail create a new Label "SpamChecked" - settings "Hide in label list",
+"Hide in message list", "Show in IMAP" - this allows the script to keep
+track of checked messages.
+
+=head1 USAGE
+
+Run from the command line, or from cron as below
+
+    */15 * * * *  /usr/local/bin/gmail-spamassassin
+
+
+=head1 SEE ALSO
+
+L<Net::IMAP::Simple::Gmail>,
+L<Mail::SpamAssassin>,
+L<perl>.
+
+=head1 AUTHOR
+
+James Powell
+
+=head1 COPYRIGHT
+
+  Copyright (c) 2013 James Powell.  All rights reserved.
+  This script is free software; you can redistribute it and/or modify it
+  under the same terms as Perl itself.
+
+=cut

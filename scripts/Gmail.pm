@@ -62,7 +62,7 @@ methods the interface is identical.
 
 =item get_labels
 
-$imap->get_labels($msgid);
+my $labels = $imap->get_labels($msgid);
 
 Returns an arrayref of all labels on the message.
 
