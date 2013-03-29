@@ -3,7 +3,7 @@ use Text::ParseWords;
 use strict;
 
 use vars qw[$VERSION];
-$VERSION = (qw$Revision: 0.1 $)[1];
+$VERSION = (qw$Revision: 0.11 $)[1];
 
 use base qw[Net::IMAP::Simple::SSL];
 
@@ -23,9 +23,35 @@ sub get_labels {
             }
         },
     );
-
 }
 
+
+sub add_labels {
+    my ( $self, $number, @labels ) = @_;
+    return $self->_label_manip( $number, '+X-GM-LABELS', @labels );
+}
+
+sub remove_labels {
+    my ( $self, $number, @labels ) = @_;
+    return $self->_label_manip( $number, '-X-GM-LABELS', @labels );
+}
+
+
+sub _label_manip {
+    my ( $self, $number, $op, @labels ) = @_;
+    return unless @labels;
+
+    # quote labels with spaces
+    @labels = map { / / ? '"' . $_ . '"' : $_ } @labels;
+    my $label_line = join ' ', @labels;
+
+    return $self->_process_cmd(
+        cmd     => [ STORE => qq[$number $op ($label_line)] ],
+        final   => sub { },
+        process => sub { },
+    );
+
+}
 
 1;
 
@@ -65,6 +91,18 @@ methods the interface is identical.
 my $labels = $imap->get_labels($msgid);
 
 Returns an arrayref of all labels on the message.
+
+=item add_labels
+
+$imap->add_labels($msgid, qw{accounts job});
+
+Adds the labels to the selected message (labels must already exist).
+
+=item remove_labels
+
+$imap->remove_labels($msgid, qw{job});
+
+Removes the labels from the selected message.
 
 =back
 
