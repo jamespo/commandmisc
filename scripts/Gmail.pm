@@ -3,26 +3,82 @@ use Text::ParseWords;
 use strict;
 
 use vars qw[$VERSION];
-$VERSION = (qw$Revision: 0.11 $)[1];
+$VERSION = (qw$Revision: 0.2 $)[1];
 
 use base qw[Net::IMAP::Simple::SSL];
 
+
+sub run_search {
+    my ( $self, $search_terms ) = @_;
+    my @hits;
+
+    return $self->_process_cmd(
+        cmd => [ SEARCH => qq[X-GM-RAW "$search_terms"] ],
+	final => sub { 
+	    return \@hits;
+	},
+        process => sub {
+	    if ( $_[0] =~ /^\* SEARCH (.*)\s*$/ ) {
+		@hits = split / /, $1;
+	    }
+	},
+	);
+}
+
+
+
+sub get_msgids {
+    my ( $self, $number ) = @_;
+    return $self->_get_gminfo( $number, 'X-GM-MSGID' );
+}
+
+sub get_threadids {
+    my ( $self, $number ) = @_;
+    return $self->_get_gminfo( $number, 'X-GM-THRID' );
+}
+
+
+sub _get_gminfo {
+    my ( $self, $number, $gm_identifier ) = @_;
+    my %threadid;
+
+    return $self->_process_cmd(
+        cmd => [ FETCH => qq[$number ($gm_identifier)] ],
+	final => sub { 
+	    # if range, return hashref, else scalar
+	    return ($number =~ /:/) ? \%threadid : $threadid{$number};
+	},
+        process => sub {
+	    foreach (@_) {
+		if ( $_ =~ /^\* (\d+) FETCH \($gm_identifier (\d+)\)\s*$/ ) {
+		    my ($num, $label) = ($1, $2);
+		    $threadid{$1} = $2;
+		}
+	    }
+	},
+	);
+}
+
 sub get_labels {
     my ( $self, $number ) = @_;
-
-    my $label;
+    my %labels;
 
     return $self->_process_cmd(
         cmd => [ FETCH => qq[$number (X-GM-LABELS)] ],
 	final => sub { 
-	    my @labels = Text::ParseWords::parse_line(' ', 0, $label);
-	    return \@labels },
+	    # if range, return hashref else arrayrg
+	    return ($number =~ /:/) ? \%labels : $labels{$number};
+	},
         process => sub {
-            if ( $_[0] =~ /^\* \d+ FETCH \(X-GM-LABELS \((.+)\)\)\s*$/ ) {
-                $label = $1;
-            }
-        },
-    );
+	    foreach (@_) {
+		if ( $_ =~ /^\* (\d+) FETCH \(X-GM-LABELS \((.+)\)\)\s*$/ ) {
+		    my ($num, $label) = ($1, $2);
+		    my @labels = Text::ParseWords::parse_line(' ', 0, $label);
+		    $labels{$num} = \@labels;
+		}
+	    }
+	},
+	);
 }
 
 
@@ -89,8 +145,11 @@ methods the interface is identical.
 =item get_labels
 
 my $labels = $imap->get_labels($msgid);
+my $labels = $imap->get_labels('1:4');
 
-Returns an arrayref of all labels on the message.
+If $msgid specifies one message (eg $msgid = 1), returns an arrayref of all labels on the message.
+
+If $msgid is a range of messages (eg $msgid eq '1:4'), returns a hashref of all msgids => arrayref of labels. 
 
 =item add_labels
 
@@ -103,6 +162,21 @@ Adds the labels to the selected message (labels must already exist).
 $imap->remove_labels($msgid, qw{job});
 
 Removes the labels from the selected message.
+
+=item get_threadids
+
+my $threadid = $imap->get_threadids($msgid);
+my $threadids = $imap->get_threadids('1:10');
+
+If $msgid specifies one message (eg $msgid = 1), returns a string containing the Gmail threadid.
+
+If $msgid is a range of messages (eg $msgid eq '1:4'), returns a hashref of all msgids => threadids;
+
+=item run_search
+
+my $run_search = $imap->run_search('Perl');
+
+Returns an array of msgids matching the search terms.
 
 =back
 
