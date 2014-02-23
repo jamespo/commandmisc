@@ -23,6 +23,8 @@ with open(filename) as f:
 				next
 			else:
 				prevlineblank = True
+		else:
+			prevlineblank = False
 
 		if re.search('</', line):
 			indentlevel -= 1
