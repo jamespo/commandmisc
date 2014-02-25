@@ -18,9 +18,9 @@ with open(filename) as f:
 		line = re.sub('\s+$', '', line)
 		line = re.sub('^\s+', '', line)
 		# compress blank lines
-		if line == "":
+		if len(line) == 0:
 			if prevlineblank:
-				next
+				continue
 			else:
 				prevlineblank = True
 		else:
