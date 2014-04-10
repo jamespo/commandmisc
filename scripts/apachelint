@@ -35,3 +35,4 @@ with open(filename) as f:
         if re.search('<(?!/)', line):
             indentlevel += 1
 
+
