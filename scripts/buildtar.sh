@@ -16,7 +16,7 @@ mkdir $MYTMPDIR
 
 trap 'rm -rf $MYTMPDIR' EXIT
 
-if [ -n $GITURL -a -n $DIR ]; then
+if [ -n $GITURL -o -n $DIR ]; then
     cd $MYTMPDIR
     git clone $GITURL
     cd $(basename $GITURL | sed -e 's/.git//')/$DIR/..
