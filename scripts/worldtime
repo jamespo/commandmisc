@@ -1,0 +1,12 @@
+#!/bin/bash
+
+# worldtime - show time in different zones
+
+zones=(Europe/London US/Eastern Asia/Singapore)
+
+for zone in ${zones[@]};
+do
+	mydate=$(TZ=$zone date)
+	printf "%-20s: " $zone 
+	echo $mydate
+done
