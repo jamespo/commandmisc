@@ -1,0 +1,11 @@
+#!/bin/bash
+
+# viewpdf - view PDF files on the commandline
+
+FILE=`mktemp`
+
+/usr/bin/pdftohtml -q -noframes $1 $FILE.html
+
+lynx -dump -force_html $FILE.html
+
+rm -f $FILE.html
