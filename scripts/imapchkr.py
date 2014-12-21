@@ -2,8 +2,8 @@
 
 # imapchkr.py - checks for new messages in IMAP server
 # (c) James Powell - jamespo [at] gmail [dot] com 2014
-# Create ~/.config/.imapchkr.conf with contents
-# [Main]
+# Create ~/.config/.imapchkr.conf with 1 or more sections as below:
+# [serveralias]
 # user=james
 # password=2347923rbkaa
 # server=yourimapserver.com
@@ -23,25 +23,33 @@ def readconf():
     return config
 
 def checknew(user, pw, server, folder="INBOX"):
+    '''returns tuple of unread, total # of messages'''
     mail = imaplib.IMAP4_SSL(server)
     mail.login(user, pw)
     mail.list()
-    mail.select(folder) # connect to inbox.
-    (retcode, messages) = mail.search(None, '(UNSEEN)')
-    if retcode == 'OK':
-        if messages[0] == '':
-            return 0
+    (allretcode, allmessages_str) = mail.select(folder) # connect to inbox.
+    (unretcode, unmessages) = mail.search(None, '(UNSEEN)')
+    if (unretcode, allretcode) == ('OK', 'OK'):
+        allmessages_num = int(allmessages_str[0])
+        if unmessages[0] == '':
+            return (0, allmessages_num)
         else:
-            return len(messages[0].split(' '))
+            return (len(unmessages[0].split(' ')), allmessages_num)
     else:
-        return 0
+        return (None, None)
+
+def format_msgcnt(server, new_msg, all_msg):
+    return '[%s: %d/%d]' % (server, new_msg, all_msg)
 
 def main():
     config = readconf()
-    user, pw, server = (config.get('Main', 'user'), config.get('Main', 'password'),
-                        config.get('Main', 'server'))
-    print checknew(user, pw, server)
-
+    counts = []
+    for srv_sect in config.sections():
+        user, pw, server = (config.get(srv_sect, 'user'), config.get(srv_sect, 'password'),
+                            config.get(srv_sect, 'server'))
+        msg_count = checknew(user, pw, server)
+        counts.append(format_msgcnt(srv_sect, *msg_count))
+    print ' '.join(counts)
 
 if __name__ == '__main__':
     main()
