@@ -36,6 +36,12 @@ def buildpodcast(options, files):
         mp3info = eyed3.load(mp3)
         mp3duration = time.strftime('%H:%M:%S', time.gmtime(mp3info.info.time_secs))
         mp3url = "%s/%s" % (options.podurl, mp3)
+        mp3size = os.stat(mp3).st_size
+
+        myenc = Enclosure(
+            url = mp3url,
+            length = mp3size,
+            type = "audio/mp3")
 
         itunes_item = iTunesItem(
             author = mp3info.tag.artist,
@@ -47,12 +53,13 @@ def buildpodcast(options, files):
 
         item = Item(
             title = mp3info.tag.title,
-            link = mp3url,
+            link = "",
             description = "",
             author = mp3info.tag.artist,
             guid = Guid(mp3url),
             pubDate = datetime.datetime.fromtimestamp(mp3info.tag.file_info.mtime),
-            extensions = [itunes_item])
+            extensions = [itunes_item],
+            enclosure = myenc)
 
         poditems.append(item)
 
