@@ -1,0 +1,25 @@
+#!/usr/bin/env python
+
+# getyou-format - take output of "youtube-dl -j" & write mp3 tags
+# for extracted audio
+# -*-Python-*-
+
+import json
+import sys, os
+import re
+import eyed3
+
+parsed = json.load(sys.stdin)
+# get mp3 filename
+origfile = re.sub("\.\w+$", ".mp3", parsed["_filename"])
+newfilename = parsed["display_id"] + ".mp3"
+
+os.rename(origfile, newfilename)
+
+mp3info = eyed3.load(newfilename)
+
+mp3info.tag.artist = parsed["uploader"]
+mp3info.tag.title = parsed["fulltitle"]
+
+mp3info.tag.save()
+

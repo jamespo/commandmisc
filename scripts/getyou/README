@@ -1,0 +1,2 @@
+A couple of scripts to go together with buildpodcast to download & tag
+mp3s from youtube (with the help of youtube-dl & ffmpeg).

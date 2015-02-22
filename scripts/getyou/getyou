@@ -1,0 +1,12 @@
+#!/bin/bash
+
+if [[ $1 != "" ]]; then
+
+youtube-dl --extract-audio --audio-format mp3 "$1"
+JSON=$(youtube-dl -j "$1")
+
+echo $JSON | getyou-format
+
+else
+    echo "Supply a URL"
+fi
