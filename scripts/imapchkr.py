@@ -24,6 +24,8 @@ def getopts():
     parser = OptionParser()
     parser.add_option("-b", help="b/w output", action="store_false",
                       dest="color", default = True)
+    parser.add_option("-s", help="short output", action="store_true",
+                      dest="short", default = False)
     (options, args) = parser.parse_args()
     return options
 
@@ -51,15 +53,19 @@ def checknew(q, account, user, pw, server, folder="INBOX"):
         pass
     q.put((account, None, None))
 
-def format_msgcnt(color, server, new_msg, all_msg):
-    if None in (new_msg, all_msg):
-        return '[%s: unknown]' % server
-    elif color and new_msg > 0:
-        return '[%s: %s%d/%d%s]' % (server, colmap['HILIT'],
+def format_msgcnt(options, servercount):
+    output = ''
+    for server, new_msg, all_msg in servercount:
+        if options.short:
+            output += "%s:%s " % (server[0] , new_msg)
+        elif None in (new_msg, all_msg):
+            output += '[%s: unknown] ' % server
+        elif options.color and new_msg > 0:
+            output += '[%s: %s%d/%d%s] ' % (server, colmap['HILIT'],
                                 new_msg, all_msg, colmap['NORM'])
-    else:
-        return '[%s: %d/%d]' % (server, new_msg, all_msg)
-
+        else:
+            output += '[%s: %d/%d] ' % (server, new_msg, all_msg)
+    return output
 
 def main():
     cmd_options = getopts()
@@ -76,8 +82,8 @@ def main():
     counts = []
     for account in accounts:
         msg_results = q.get()
-        counts.append(format_msgcnt(cmd_options.color, *msg_results))
-    print ' '.join(counts)
+        counts.append(msg_results)
+    print format_msgcnt(cmd_options, counts)
 
 if __name__ == '__main__':
     main()
