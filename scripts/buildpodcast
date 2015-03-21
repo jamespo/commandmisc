@@ -7,6 +7,7 @@
 from __future__ import print_function
 import datetime, time
 import fnmatch, os
+import urllib
 from rfeed import *
 import eyed3
 from optparse import OptionParser
@@ -35,7 +36,7 @@ def buildpodcast(options, files):
     for mp3 in files:
         mp3info = eyed3.load(mp3)
         mp3duration = time.strftime('%H:%M:%S', time.gmtime(mp3info.info.time_secs))
-        mp3url = "%s/%s" % (options.podurl, mp3)
+        mp3url = "%s/%s" % (options.podurl, urllib.quote(mp3))
         mp3size = os.stat(mp3).st_size
 
         myenc = Enclosure(
