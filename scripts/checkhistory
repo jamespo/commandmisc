@@ -5,11 +5,15 @@
 
 import os, re
 
-patstr = ['^mysql(?:dump)? .*-p']
+patstr = ['^mysql(?:dump)? .*-p\S', '^sshpass .*-p', '^curl .*(?:-u|-user) .*:',
+          '^lynx .*-p?auth=.*:', '^wget .*--(?:ftp-|http-)?password',
+          'sudo .*-S', '^sqlplus +(?:.* +)?.+/.+',
+          '^user(?:add|mod) .*(?:-p|--password) ']
 patterns = [re.compile(a) for a in patstr]
 zshclean = re.compile('^: \d+:0;')
 
 def checkfile(histfile):
+    '''take a shell history and check which exposed passwords match'''
     print 'Passwords in %s' % histfile
     with open(histfile) as f:
         for linenum, line in enumerate(f):
