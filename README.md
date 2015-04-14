@@ -11,3 +11,5 @@ gmail-spamassassin - runs spamassassin against your gmail INBOX
 apachelint - cleans up your apache config files
 
 buildpodcast - create a podcast RSS feed from a directory of mp3 files
+
+checkhistory - check for any passwords in your shell history
