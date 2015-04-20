@@ -27,7 +27,7 @@ def warnit(linenum, line):
     print "%s: %s" % (linenum, line)
 
 def main():
-    histfiles = ('.bash_history', '.zsh_history')
+    histfiles = ('.bash_history', '.zsh_history', '.history', '.sh_history')
     for histfile in histfiles:
         fullpath = os.path.expanduser(('~/%s' % histfile))
         if os.path.exists(fullpath):
