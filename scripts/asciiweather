@@ -1,0 +1,21 @@
+#!/usr/bin/env python
+
+# asciiweather
+# -*-Python-*-
+
+from optparse import OptionParser
+import yweather
+
+def getopts():
+    parser = OptionParser()
+    parser.add_option("-a", help="area code", dest="areacode")
+    (options, args) = parser.parse_args()
+    return options
+
+def main():
+    options = getopts()
+
+
+if __name__ == '__main__':
+    main()
+
