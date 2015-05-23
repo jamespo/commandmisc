@@ -8,12 +8,25 @@ import yweather
 
 def getopts():
     parser = OptionParser()
-    parser.add_option("-a", help="area code", dest="areacode")
+    parser.add_option("-a", help="area code (LID format)", dest="areacode")
     (options, args) = parser.parse_args()
     return options
 
+def get_weather(areacode):
+    client = yweather.Client()
+    return client.fetch_weather(areacode)
+
+def display_weather(weather):
+    for thisday in weather["forecast"]:
+        print "{day}s: {text}s".format(**thisday)
+
 def main():
     options = getopts()
+    weather = get_weather(options.areacode)
+    if not weather:
+        print "Areacode %s not found" % options.areacode
+    else:
+        display_weather(weather)
 
 
 if __name__ == '__main__':
