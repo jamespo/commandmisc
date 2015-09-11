@@ -65,6 +65,7 @@ def format_msgcnt(options, servercount):
                                 new_msg, all_msg, colmap['NORM'])
         else:
             output += '[%s: %d/%d] ' % (server, new_msg, all_msg)
+    output = output.rstrip()
     return output
 
 def main():
