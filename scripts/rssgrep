@@ -1,0 +1,21 @@
+#!/usr/bin/env python
+
+# -*-Python-*-
+# rssgrep
+
+import feedparser
+import sys
+
+
+def main(feed, srch):
+    d = feedparser.parse(feed)
+    for entry in d.entries:
+        if srch in entry.title:
+            print "%s - %s" % (entry.title, entry.link)
+            
+
+if __name__ == '__main__':
+    try:
+        main(sys.argv[1], sys.argv[2])
+    except IndexError:
+        print "USAGE: rssgrep [rss url] [search term]"
