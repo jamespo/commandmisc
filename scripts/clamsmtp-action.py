@@ -23,8 +23,8 @@ def send_mail():
     body = ("An email virus has been blocked", "",
             "The supposed sender was: %s" % os.environ.get('SENDER'), "",
             "The recipient(s) were: %s" % os.environ.get('RECIPIENTS'), "",
-            "Virus name is: %s" % os.environ.get('RECIPIENTS'), "",
-            "Remote Client IP is: %s" % os.environ.get('REMOTE', 'UNKNOWN'), "",
+            "Virus name is: %s" % os.environ.get('VIRUS'), "",
+            "Remote Client IP is: %s" % os.environ.get('CLIENT', 'UNKNOWN'), "",
             "Quarantine file saved in: %s" % os.environ.get('EMAIL', 'NOT SAVED'), "")
     body_str = "\n".join(body)
 
