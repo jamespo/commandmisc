@@ -19,8 +19,8 @@ class RetryFailed(object):
                           dest="retrydelay", default="60")
         parser.add_option("-b", help="backoff multiplier", action="store",
                           dest="retrydelay", default="1.5", type="float")
-        parser.add_option("-t", help="test", action="store", dest="test",
-                          default="rc!=0")
+        parser.add_option("-t", help="success test", action="store", 
+                          dest="test", default="rc=0")
         (self.options, args) = parser.parse_args()
         self.num_runs = 0
         # parse test
@@ -35,8 +35,8 @@ class RetryFailed(object):
 
     def success(self):
         '''run test on the output / rc'''
-        return self.ops[self.testoper](getattr(self, self.testarg),
-                                       self.testvalue)
+        return self.ops[self.testoper](int(getattr(self, self.testarg)),
+                                       int(self.testvalue))
 
     def run(self):
         '''loop through runs of the cmd until exhausted'''
