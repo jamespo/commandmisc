@@ -1,0 +1,73 @@
+#!/usr/bin/env python
+# retryfailed - resilient executable run
+# (c) jamespo [at] gmail [dot] com / 2016
+# -*-Python-*-
+
+from subprocess import Popen, PIPE
+import shlex, re, operator, sys
+from optparse import OptionParser
+
+class RetryFailed(object):
+    def __init__(self):
+        '''get parameters from cmd line'''
+        parser = OptionParser()
+        parser.add_option("-c", help="command to run", action="store", 
+                          dest="cmd")
+        parser.add_option("-n", help="# retry attempts", action="store", 
+                          dest="numretries", default = "1", type="int")
+        parser.add_option("-d", help="retry delay (secs)", action="store",
+                          dest="retrydelay", default="60")
+        parser.add_option("-b", help="backoff multiplier", action="store",
+                          dest="retrydelay", default="1.5", type="float")
+        parser.add_option("-t", help="test", action="store", dest="test",
+                          default="rc!=0")
+        (self.options, args) = parser.parse_args()
+        self.num_runs = 0
+        # parse test
+        self.ops = { "=" : operator.eq,
+                     ">" : operator.gt,
+                     "<" : operator.lt,
+                     "!=" : operator.ne }
+        pt = re.match(r'(rc|stderr|stdout) *(=|!=|>|<) *(.*)$', 
+                      self.options.test)
+        (self.testarg, self.testoper, self.testvalue) \
+            = (pt.group(1), pt.group(2), pt.group(3))
+
+    def success(self):
+        '''run test on the output / rc'''
+        return self.ops[self.testoper](getattr(self, self.testarg),
+                                       self.testvalue)
+
+    def run(self):
+        '''loop through runs of the cmd until exhausted'''
+        self.runcmd(self.options.cmd)
+        self.num_runs += 1
+        if self.success():
+            self.output("SUCCESS")
+        elif self.num_runs == self.options.numretries:
+            self.output("FAILED: all retries used")
+        else:
+            self.run()
+
+    def output(self, status):
+        sys.stderr.write("%s\n%s\n" % (status, self.stderr))
+        sys.stdout.write("%s" % self.stdout)
+        sys.exit(self.rc)
+
+    def runcmd(self, cmd):
+        '''run cmd'''
+        split_cmd = shlex.split(cmd)
+        p = Popen(split_cmd, stdout=PIPE, stderr=PIPE)
+        (self.stdout, self.stderr) = p.communicate()
+        self.rc = p.returncode
+
+def main():
+    rf = RetryFailed()
+    if rf.options.cmd is None:
+        print "USAGE: retryfailed -c command"
+    else:
+        rf.run()
+
+if __name__ == '__main__':
+    main()
+
