@@ -4,7 +4,7 @@
 # -*-Python-*-
 
 from subprocess import Popen, PIPE
-import shlex, re, operator, sys
+import shlex, re, operator, sys, time
 from optparse import OptionParser
 
 class RetryFailed(object):
@@ -16,13 +16,12 @@ class RetryFailed(object):
         parser.add_option("-n", help="# retry attempts", action="store", 
                           dest="numretries", default = "1", type="int")
         parser.add_option("-d", help="retry delay (secs)", action="store",
-                          dest="retrydelay", default="60")
+                          dest="retrydelay", default="60", type="int")
         parser.add_option("-b", help="backoff multiplier", action="store",
-                          dest="retrydelay", default="1.5", type="float")
+                          dest="backoff", default="1.5", type="float")
         parser.add_option("-t", help="success test", action="store", 
                           dest="test", default="rc=0")
         (self.options, args) = parser.parse_args()
-        self.num_runs = 0
         # parse test
         self.ops = { "=" : operator.eq,
                      ">" : operator.gt,
@@ -40,14 +39,15 @@ class RetryFailed(object):
 
     def run(self):
         '''loop through runs of the cmd until exhausted'''
-        self.runcmd(self.options.cmd)
-        self.num_runs += 1
-        if self.success():
-            self.output("SUCCESS")
-        elif self.num_runs == self.options.numretries:
-            self.output("FAILED: all retries used")
-        else:
-            self.run()
+        sleep_secs = self.options.retrydelay
+        for run_count in range(1, self.options.numretries + 2):
+            if run_count > 1:
+                time.sleep(sleep_secs)
+                sleep_secs = sleep_secs * self.options.backoff
+            self.runcmd(self.options.cmd)
+            if self.success():
+                self.output("SUCCESS")
+        self.output("FAILED: all retries (%d) used" % self.options.numretries)
 
     def output(self, status):
         sys.stderr.write("%s\n%s\n" % (status, self.stderr))
