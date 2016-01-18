@@ -4,38 +4,42 @@
 # -*-Python-*-
 
 from subprocess import Popen, PIPE
-import shlex, re, operator, sys, time
+import re, operator, sys, time
 from optparse import OptionParser
 
 class RetryFailed(object):
     def __init__(self):
         '''get parameters from cmd line'''
-        parser = OptionParser()
-        parser.add_option("-c", help="command to run", action="store", 
-                          dest="cmd")
-        parser.add_option("-n", help="# retry attempts", action="store", 
-                          dest="numretries", default = "1", type="int")
-        parser.add_option("-d", help="retry delay (secs)", action="store",
-                          dest="retrydelay", default="60", type="int")
-        parser.add_option("-b", help="backoff multiplier", action="store",
-                          dest="backoff", default="1.5", type="float")
-        parser.add_option("-t", help="success test", action="store", 
-                          dest="test", default="rc=0")
+        usage = "usage: %prog [options] command arg1 arg2"
+        parser = OptionParser(usage=usage)
+        parser.add_option("-n", help="# retry attempts [default %default]",
+                          action="store", dest="numretries", default = "1",
+                          type="int")
+        parser.add_option("-d", help="retry delay (secs) [default %default]",
+                          action="store", dest="retrydelay", default="60",
+                          type="int")
+        parser.add_option("-b", help="backoff multiplier [default %default]",
+                          action="store", dest="backoff", default="1.5",
+                          type="float")
+        parser.add_option("-t", help="success test [default %default]",
+                          action="store", dest="test", default="rc=0")
         (self.options, args) = parser.parse_args()
-        # parse test
-        self.ops = { "=" : operator.eq,
-                     ">" : operator.gt,
-                     "<" : operator.lt,
-                     "!=" : operator.ne }
-        pt = re.match(r'(rc|stderr|stdout) *(=|!=|>|<) *(.*)$', 
-                      self.options.test)
+        self.options.cmd = args
+        self.usage = parser.print_help()
+        # parse test (argument operator value)
+        ops = { "=" : operator.eq,
+                ">" : operator.gt,
+                "<" : operator.lt,
+                "!=" : operator.ne }
+        pt = re.match(r'(rc|stderr|stdout) *(=|!=|>|<|contains) *(.*)$', 
+            self.options.test)
         (self.testarg, self.testoper, self.testvalue) \
-            = (pt.group(1), pt.group(2), pt.group(3))
+            = (pt.group(1), ops[pt.group(2)], pt.group(3))
 
     def success(self):
         '''run test on the output / rc'''
-        return self.ops[self.testoper](int(getattr(self, self.testarg)),
-                                       int(self.testvalue))
+        return self.testoper( int(getattr(self, self.testarg)),
+            int(self.testvalue))
 
     def run(self):
         '''loop through runs of the cmd until exhausted'''
@@ -56,15 +60,14 @@ class RetryFailed(object):
 
     def runcmd(self, cmd):
         '''run cmd'''
-        split_cmd = shlex.split(cmd)
-        p = Popen(split_cmd, stdout=PIPE, stderr=PIPE)
+        p = Popen(cmd, stdout=PIPE, stderr=PIPE)
         (self.stdout, self.stderr) = p.communicate()
         self.rc = p.returncode
 
 def main():
     rf = RetryFailed()
-    if rf.options.cmd is None:
-        print "USAGE: retryfailed -c command"
+    if not len(rf.options.cmd):
+        rf.usage
     else:
         rf.run()
 
