@@ -8,7 +8,8 @@ import yweather
 
 def getopts():
     parser = OptionParser()
-    parser.add_option("-a", help="area code (LID format)", dest="areacode")
+    parser.add_option("-a", help="area code (LID format)", dest="areacode",
+                      default="UKXX0085") # default to London   
     (options, args) = parser.parse_args()
     return options
 
@@ -18,7 +19,7 @@ def get_weather(areacode):
 
 def display_weather(weather):
     for thisday in weather["forecast"]:
-        print "{day}s: {text}s".format(**thisday)
+        print "{day}: {text} {high}/{low}".format(**thisday)
 
 def main():
     options = getopts()
