@@ -6,10 +6,21 @@
 from optparse import OptionParser
 import yweather
 
+colmap = {      # shell escape codes
+        'NORM'      : '\033[0m',
+        'RED'      : '\033[31;1m',
+        'YELLOW'   : '\033[33;1m',
+        'ICEBLUE'   : '\033[36;1m',
+        'WHITE'     : '\033[37;1m'
+}
+
+
 def getopts():
     parser = OptionParser()
     parser.add_option("-a", help="area code (LID format)", dest="areacode",
-                      default="UKXX0085") # default to London   
+                      default="UKXX0085") # default to London
+    parser.add_option("-b", help="monochrome", dest="color", action="store_false",
+                      default = True)
     (options, args) = parser.parse_args()
     return options
 
@@ -17,8 +28,22 @@ def get_weather(areacode):
     client = yweather.Client()
     return client.fetch_weather(areacode)
 
-def display_weather(weather):
+def color(temp):
+    if int(temp) > 80:
+        temp = '%s%s%s' % (colmap['RED'], temp, colmap['NORM'])
+    elif int(temp) > 60:
+        temp = '%s%s%s' % (colmap['YELLOW'], temp, colmap['NORM']) 
+    elif int(temp) < 35:
+        temp = '%s%s%s' % (colmap['WHITE'], temp, colmap['NORM'])
+    elif int(temp) < 45:
+        temp = '%s%s%s' % (colmap['ICEBLUE'], temp, colmap['NORM']) 
+    return temp
+    
+def display_weather(weather, is_color):
     for thisday in weather["forecast"]:
+        if is_color:
+            thisday['high'] = color(thisday['high'])
+            thisday['low'] = color(thisday['low'])                                           
         print "{day}: {text} {high}/{low}".format(**thisday)
 
 def main():
@@ -27,7 +52,7 @@ def main():
     if not weather:
         print "Areacode %s not found" % options.areacode
     else:
-        display_weather(weather)
+        display_weather(weather, options.color)
 
 
 if __name__ == '__main__':
