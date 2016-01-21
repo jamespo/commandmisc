@@ -22,6 +22,8 @@ def getopts():
                       default="UKXX0085") # default to London
     parser.add_option("-b", help="monochrome", dest="color", action="store_false",
                       default = True)
+    parser.add_option("-f", help="fahrenheit", dest="use_celsius", action="store_false",
+                      default = True)
     (options, args) = parser.parse_args()
     return options
 
@@ -34,17 +36,22 @@ def color(temp):
         showtemp_col = colmap['RED']
     elif temp > 60:
         showtemp_col = colmap['YELLOW']
-    elif temp < 35:
+    elif temp < 40:
         showtemp_col = colmap['WHITE']
-    elif temp < 45:
+    elif temp < 50:
         showtemp_col = colmap['ICEBLUE']
     else:
         showtemp_col = colmap['NORM']
     return (showtemp_col, colmap['NORM'])
-    
-def display_weather(weather, is_color):
+
+def f_to_c(temp):
+    return str(int((float(temp) - 32) / 1.8))
+
+def display_weather(weather, is_color, is_celsius):
     for thisday in weather["forecast"]:
         (low, high) = (int(thisday["low"]), int(thisday["high"]))
+        if is_celsius:
+            (thisday["low"], thisday["high"]) = (f_to_c(thisday["low"]), f_to_c(thisday["high"]))
         thisday["high"] = add_degree(thisday["high"])
         thisday["low"] = add_degree(thisday["low"])
         if is_color:
@@ -63,7 +70,7 @@ def main():
     if not weather:
         print "Areacode %s not found" % options.areacode
     else:
-        display_weather(weather, options.color)
+        display_weather(weather, options.color, options.use_celsius)
 
 
 if __name__ == '__main__':
