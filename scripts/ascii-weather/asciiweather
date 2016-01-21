@@ -5,6 +5,7 @@
 
 from optparse import OptionParser
 import yweather
+import sys
 
 colmap = {      # shell escape codes
         'NORM'      : '\033[0m',
@@ -29,23 +30,33 @@ def get_weather(areacode):
     return client.fetch_weather(areacode)
 
 def color(temp):
-    if int(temp) > 80:
-        temp = '%s%s%s' % (colmap['RED'], temp, colmap['NORM'])
-    elif int(temp) > 60:
-        temp = '%s%s%s' % (colmap['YELLOW'], temp, colmap['NORM']) 
-    elif int(temp) < 35:
-        temp = '%s%s%s' % (colmap['WHITE'], temp, colmap['NORM'])
-    elif int(temp) < 45:
-        temp = '%s%s%s' % (colmap['ICEBLUE'], temp, colmap['NORM']) 
-    return temp
+    if temp > 80:
+        showtemp_col = colmap['RED']
+    elif temp > 60:
+        showtemp_col = colmap['YELLOW']
+    elif temp < 35:
+        showtemp_col = colmap['WHITE']
+    elif temp < 45:
+        showtemp_col = colmap['ICEBLUE']
+    else:
+        showtemp_col = colmap['NORM']
+    return (showtemp_col, colmap['NORM'])
     
 def display_weather(weather, is_color):
     for thisday in weather["forecast"]:
+        (low, high) = (int(thisday["low"]), int(thisday["high"]))
+        thisday["high"] = add_degree(thisday["high"])
+        thisday["low"] = add_degree(thisday["low"])
         if is_color:
-            thisday['high'] = color(thisday['high'])
-            thisday['low'] = color(thisday['low'])                                           
-        print "{day}: {text} {high}/{low}".format(**thisday)
+            (thisday['high_startcol'], thisday['high_endcol']) = color(high)
+            (thisday['low_startcol'], thisday['low_endcol']) = color(low)
+            print u"{day}: {text} {high_startcol}{high}{high_endcol}/{low_startcol}{low}{low_endcol}".format(**thisday)
+        else:
+            print u"{day}: {text} {high}/{low}".format(**thisday)
 
+def add_degree(temp):
+    return temp.encode("utf-8") + u'\N{DEGREE SIGN}'
+            
 def main():
     options = getopts()
     weather = get_weather(options.areacode)
