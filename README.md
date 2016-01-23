@@ -13,3 +13,7 @@ apachelint - cleans up your apache config files
 buildpodcast - create a podcast RSS feed from a directory of mp3 files
 
 checkhistory - check for any passwords in your shell history
+
+retryfailed - repeat a failed command with backoff multiplier
+
+asciiweather - quick weather forecast on command line
