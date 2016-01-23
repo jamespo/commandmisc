@@ -17,7 +17,8 @@ colmap = {      # shell escape codes
 
 
 def getopts():
-    parser = OptionParser()
+    usage = "usage: %prog [options]\n\nCheck https://weather.codes for area code (default London UKXX0085)"
+    parser = OptionParser(usage = usage)
     parser.add_option("-a", help="area code (LID format)", dest="areacode",
                       default="UKXX0085") # default to London
     parser.add_option("-b", help="monochrome", dest="color", action="store_false",
