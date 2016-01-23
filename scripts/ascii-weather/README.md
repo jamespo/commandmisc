@@ -1,6 +1,9 @@
 asciiweather
 ============
 
+Command line weather tool, written in Python.
+Retrieves weather from http://weather.yahoo.com, no registration required.
+
 INSTALLATION
 ============
 
