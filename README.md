@@ -17,3 +17,5 @@ checkhistory - check for any passwords in your shell history
 retryfailed - repeat a failed command with backoff multiplier
 
 asciiweather - quick weather forecast on command line
+
+if-autocert - automatically accept IMAP TLS certificate for imapfilter
