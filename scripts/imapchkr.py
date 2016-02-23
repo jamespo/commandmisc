@@ -90,8 +90,8 @@ def format_mailsummaries(mailinfos):
     summstr = ''
     for mailinfo in mailinfos:
         for summ in mailinfo.msgs:
-            summstr +=  "[%s] %2s %30s %50s\n" % (mailinfo.account, summ.num, \
-                                                  summ.fromad, summ.subject)
+            summstr +=  "[%s] [%4s] %25s %50s\n" % (mailinfo.account, summ.num, \
+                                                    summ.fromad, summ.subject)
     return summstr
 
 def format_msgcnt(options, accounts):
@@ -120,16 +120,18 @@ def main():
         user, pw, server = (config.get(account, 'user'),
                             config.get(account, 'password'),
                             config.get(account, 'server'))
-        t = threading.Thread(target=checknew, args = (q, account,
-                                                      user, pw, server))
+        t = threading.Thread(target=checknew,
+                             args = (q, account, user, pw, server,
+                                     cmd_options.listmail))
         t.start()
     counts = []
     for account in accounts:
         msg_results = q.get()
         counts.append(msg_results)
     print format_msgcnt(cmd_options, counts)
-    if cmd_options.listmail:
-        print format_mailsummaries(counts)
+    # display email summaries if chosen and any new mails
+    if cmd_options.listmail and any([msg.unread > 0 for msg in counts]):
+        print format_mailsummaries(counts).rstrip()
 
 if __name__ == '__main__':
     main()
