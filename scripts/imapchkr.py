@@ -10,7 +10,9 @@
 
 import os
 import imaplib
+import email
 from optparse import OptionParser
+from collections import namedtuple
 import ConfigParser
 import Queue
 import threading
@@ -20,22 +22,29 @@ colmap = {      # shell escape codes
     'HILIT'     : '\033[37;1m',
 }
 
+
 def getopts():
     parser = OptionParser()
     parser.add_option("-b", help="b/w output", action="store_false",
                       dest="color", default = True)
     parser.add_option("-s", help="short output", action="store_true",
                       dest="short", default = False)
+    parser.add_option("-l", help="list mail summary", action="store_true",
+                      dest="listmail", default = False)
     (options, args) = parser.parse_args()
     return options
+
 
 def readconf():
     config = ConfigParser.ConfigParser()
     config.read(os.path.expanduser('~/.config/.imapchkr.conf'))
     return config
 
+
 def checknew(q, account, user, pw, server, folder="INBOX"):
     '''returns tuple of account, unread, total # of messages'''
+    mailinfo = namedtuple('Mailinfo', ['account', 'unread', 'total', 'msgs'])
+    mailinfo.msgs = []
     try: 
         mail = imaplib.IMAP4_SSL(server)
         mail.login(user, pw)
@@ -45,28 +54,51 @@ def checknew(q, account, user, pw, server, folder="INBOX"):
         if (unretcode, allretcode) == ('OK', 'OK'):
             allmessages_num = int(allmessages_str[0])
             if unmessages[0] == '':
-                q.put((account, 0, allmessages_num))
+                (mailinfo.account, mailinfo.unread, mailinfo.total) = \
+                (account, 0, allmessages_num)
             else:
-                q.put((account, len(unmessages[0].split(' ')), allmessages_num))
-            return
+                unmessages_arr = unmessages[0].split(' ')
+                get_mails(mail, unmessages_arr)
+                (mailinfo.account, mailinfo.unread, mailinfo.total) = \
+                    (account, len(unmessages_arr), allmessages_num)
     except:
-        pass
-    q.put((account, None, None))
+        (mailinfo.account, mailinfo.unread, mailinfo.total) = \
+            (account, None, None)
+    finally:
+        mail.close()
+        mail.logout()
+    q.put(mailinfo)
 
-def format_msgcnt(options, servercount):
+    
+def get_mails(mail, msg_ids):
+    '''get mail summaries for given msg_ids'''
+    msgs = []
+    for num in msg_ids:
+        typ, data = mail.fetch(num, '(RFC822)')
+        msg = email.message_from_string(data[0][1])
+        email_summ = namedtuple('EmailSummary', ['num', 'fromad', 'subject', 'date'])
+        email_summ.num, email_summ.fromad, email_summ.subject = \
+            num, msg['From'], msg['Subject']
+        msgs.append(email_summ)
+    return email_summ
+
+
+def format_msgcnt(options, accounts):
     output = ''
-    for server, new_msg, all_msg in servercount:
+    # for server, new_msg, all_msg in accounts:
+    for acct in accounts:
         if options.short:
-            output += "%s:%s " % (server[0] , new_msg)
-        elif None in (new_msg, all_msg):
-            output += '[%s: unknown] ' % server
-        elif options.color and new_msg > 0:
-            output += '[%s: %s%d/%d%s] ' % (server, colmap['HILIT'],
-                                new_msg, all_msg, colmap['NORM'])
+            output += "%s:%s " % (acct.account[0], acct.unread)
+        elif None in (acct.unread, acct.total):
+            output += '[%s: unknown] ' % acct.account
+        elif options.color and acct.unread > 0:
+            output += '[%s: %s%d/%d%s] ' % (acct.account, colmap['HILIT'],
+                                acct.unread, acct.total, colmap['NORM'])
         else:
-            output += '[%s: %d/%d] ' % (server, new_msg, all_msg)
+            output += '[%s: %d/%d] ' % (acct.account, acct.unread, acct.total)
     output = output.rstrip()
     return output
+
 
 def main():
     cmd_options = getopts()
