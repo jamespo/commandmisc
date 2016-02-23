@@ -41,8 +41,8 @@ def readconf():
     return config
 
 
-def checknew(q, account, user, pw, server, folder="INBOX"):
-    '''returns tuple of account, unread, total # of messages'''
+def checknew(q, account, user, pw, server, get_summaries=False, folder="INBOX"):
+    '''returns namedtuple Mailinfo'''
     mailinfo = namedtuple('Mailinfo', ['account', 'unread', 'total', 'msgs'])
     mailinfo.msgs = []
     try: 
@@ -54,13 +54,16 @@ def checknew(q, account, user, pw, server, folder="INBOX"):
         if (unretcode, allretcode) == ('OK', 'OK'):
             allmessages_num = int(allmessages_str[0])
             if unmessages[0] == '':
+                # no new mails found
                 (mailinfo.account, mailinfo.unread, mailinfo.total) = \
                 (account, 0, allmessages_num)
             else:
+                # new mails found
                 unmessages_arr = unmessages[0].split(' ')
-                get_mails(mail, unmessages_arr)
                 (mailinfo.account, mailinfo.unread, mailinfo.total) = \
                     (account, len(unmessages_arr), allmessages_num)
+                if get_summaries:
+                    mailinfo.msgs = get_mails(mail, unmessages_arr)
     except:
         (mailinfo.account, mailinfo.unread, mailinfo.total) = \
             (account, None, None)
@@ -71,7 +74,7 @@ def checknew(q, account, user, pw, server, folder="INBOX"):
 
     
 def get_mails(mail, msg_ids):
-    '''get mail summaries for given msg_ids'''
+    '''return mail summaries for given msg_ids'''
     msgs = []
     for num in msg_ids:
         typ, data = mail.fetch(num, '(RFC822)')
@@ -80,8 +83,16 @@ def get_mails(mail, msg_ids):
         email_summ.num, email_summ.fromad, email_summ.subject = \
             num, msg['From'], msg['Subject']
         msgs.append(email_summ)
-    return email_summ
+    return msgs
 
+def format_mailsummaries(mailinfos):
+    '''takes list of MailInfo tuple & returns formatted string of mails'''
+    summstr = ''
+    for mailinfo in mailinfos:
+        for summ in mailinfo.msgs:
+            summstr +=  "[%s] %2s %30s %50s\n" % (mailinfo.account, summ.num, \
+                                                  summ.fromad, summ.subject)
+    return summstr
 
 def format_msgcnt(options, accounts):
     output = ''
@@ -117,6 +128,8 @@ def main():
         msg_results = q.get()
         counts.append(msg_results)
     print format_msgcnt(cmd_options, counts)
+    if cmd_options.listmail:
+        print format_mailsummaries(counts)
 
 if __name__ == '__main__':
     main()
