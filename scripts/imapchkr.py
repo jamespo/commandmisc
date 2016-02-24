@@ -42,14 +42,16 @@ def readconf():
 
 
 def checknew(q, account, user, pw, server, get_summaries=False, folder="INBOX"):
-    '''returns namedtuple Mailinfo'''
+    '''puts namedtuple Mailinfo with summary of mailbox contents on q'''
     mailinfo = namedtuple('Mailinfo', ['account', 'unread', 'total', 'msgs'])
     mailinfo.msgs = []
-    try: 
+    try:
+        # connect to mailserver
         mail = imaplib.IMAP4_SSL(server)
         mail.login(user, pw)
         mail.list()
-        (allretcode, allmessages_str) = mail.select(folder) # connect to inbox.
+        # select inbox
+        (allretcode, allmessages_str) = mail.select(folder, readonly=True)
         (unretcode, unmessages) = mail.search(None, '(UNSEEN)')
         if (unretcode, allretcode) == ('OK', 'OK'):
             allmessages_num = int(allmessages_str[0])
@@ -64,6 +66,8 @@ def checknew(q, account, user, pw, server, get_summaries=False, folder="INBOX"):
                     (account, len(unmessages_arr), allmessages_num)
                 if get_summaries:
                     mailinfo.msgs = get_mails(mail, unmessages_arr)
+        else:
+            raise imaplib.IMAP4.error()
     except:
         (mailinfo.account, mailinfo.unread, mailinfo.total) = \
             (account, None, None)
@@ -96,7 +100,6 @@ def format_mailsummaries(mailinfos):
 
 def format_msgcnt(options, accounts):
     output = ''
-    # for server, new_msg, all_msg in accounts:
     for acct in accounts:
         if options.short:
             output += "%s:%s " % (acct.account[0], acct.unread)
