@@ -12,7 +12,8 @@ colmap = {      # shell escape codes
         'RED'      : '\033[31;1m',
         'YELLOW'   : '\033[33;1m',
         'ICEBLUE'   : '\033[36;1m',
-        'WHITE'     : '\033[37;1m'
+        'WHITE'     : '\033[37;1m',
+        'BOLD'     : '\033[1m'
 }
 
 
