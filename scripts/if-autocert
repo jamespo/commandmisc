@@ -6,7 +6,10 @@
 #
 spawn imapfilter -c $env(HOME)/.imapfilter/google.lua
 expect {
-    "ermanently*" { send "p\r\n"; interact return }
+    "ermanently*" { send "p\r\n";
+	exp_continue
+	# interact return
+    }
     eof { exit }
 }
 
