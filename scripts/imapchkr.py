@@ -11,6 +11,7 @@
 import os
 import imaplib
 import email
+from email.header import decode_header
 from optparse import OptionParser
 from collections import namedtuple
 import ConfigParser
@@ -72,7 +73,8 @@ def checknew(q, account, user, pw, server, get_summaries=False, folder="INBOX"):
         (mailinfo.account, mailinfo.unread, mailinfo.total) = \
             (account, None, None)
     finally:
-        mail.close()
+        if mail.state != 'NONAUTH':
+            mail.close()
         mail.logout()
     q.put(mailinfo)
 
@@ -84,8 +86,14 @@ def get_mails(mail, msg_ids):
         typ, data = mail.fetch(num, '(RFC822)')
         msg = email.message_from_string(data[0][1])
         email_summ = namedtuple('EmailSummary', ['num', 'fromad', 'subject', 'date'])
+        subj = msg['Subject']
+        # decode subject if in unicode format
+        # TODO: test for UTF-8 better than below
+        if 'UTF-8' in subj:
+            decd_subj = decode_header(subj)
+            subj = ''.join([ unicode(t[0], t[1] or default_charset) for t in decd_subj ])
         email_summ.num, email_summ.fromad, email_summ.subject = \
-            num, msg['From'], msg['Subject']
+            int(num), msg['From'], subj
         msgs.append(email_summ)
     return msgs
 
@@ -94,7 +102,7 @@ def format_mailsummaries(mailinfos):
     summstr = ''
     for mailinfo in mailinfos:
         for summ in mailinfo.msgs:
-            summstr +=  "[%s] [%4s] %25s %50s\n" % (mailinfo.account, summ.num, \
+            summstr +=  "[%s] [%0.4d] %.25s  %.40s\n" % (mailinfo.account, summ.num, \
                                                     summ.fromad, summ.subject)
     return summstr
 
