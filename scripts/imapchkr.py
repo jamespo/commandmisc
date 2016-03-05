@@ -82,6 +82,7 @@ def checknew(q, account, user, pw, server, get_summaries=False, folder="INBOX"):
 def get_mails(mail, msg_ids):
     '''return mail summaries for given msg_ids'''
     msgs = []
+<<<<<<< HEAD
     for num in msg_ids:
         typ, data = mail.fetch(num, '(RFC822)')
         msg = email.message_from_string(data[0][1])
@@ -94,7 +95,19 @@ def get_mails(mail, msg_ids):
             subj = ''.join([ unicode(t[0], t[1] or default_charset) for t in decd_subj ])
         email_summ.num, email_summ.fromad, email_summ.subject = \
             int(num), msg['From'], subj
+=======
+    try:
+        for num in msg_ids:
+            typ, data = mail.fetch(num, '(RFC822)')
+            msg = email.message_from_string(data[0][1])
+            email_summ = namedtuple('EmailSummary', ['num', 'fromad', 'subject', 'date'])
+            email_summ.num, email_summ.fromad, email_summ.subject = \
+                                                        num, msg['From'], msg['Subject']
+>>>>>>> 4ccb39429fa31997206b3837b3bd53ce33da47fc
         msgs.append(email_summ)
+    except:
+        # if any errors just don't list mails
+        msgs = []
     return msgs
 
 def format_mailsummaries(mailinfos):
