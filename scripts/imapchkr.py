@@ -25,6 +25,7 @@ colmap = {      # shell escape codes
 
 
 def getopts():
+    '''returns OptionParser.options for CL switches'''
     parser = OptionParser()
     parser.add_option("-b", help="b/w output", action="store_false",
                       dest="color", default = True)
@@ -37,6 +38,7 @@ def getopts():
 
 
 def readconf():
+    '''returns ConfigParser object with account details'''
     config = ConfigParser.ConfigParser()
     config.read(os.path.expanduser('~/.config/.imapchkr.conf'))
     return config
@@ -44,8 +46,7 @@ def readconf():
 
 def checknew(q, account, user, pw, server, get_summaries=False, folder="INBOX"):
     '''puts namedtuple Mailinfo with summary of mailbox contents on q'''
-    mailinfo = namedtuple('Mailinfo', ['account', 'unread', 'total', 'msgs'])
-    mailinfo.msgs = []
+    MInfo = namedtuple('Mailinfo', ['account', 'unread', 'total', 'msgs'])
     try:
         # connect to mailserver
         mail = imaplib.IMAP4_SSL(server)
@@ -58,20 +59,20 @@ def checknew(q, account, user, pw, server, get_summaries=False, folder="INBOX"):
             allmessages_num = int(allmessages_str[0])
             if unmessages[0] == '':
                 # no new mails found
-                (mailinfo.account, mailinfo.unread, mailinfo.total) = \
-                (account, 0, allmessages_num)
+                mailinfo = MInfo(account, 0, allmessages_num, [])
             else:
                 # new mails found
                 unmessages_arr = unmessages[0].split(' ')
-                (mailinfo.account, mailinfo.unread, mailinfo.total) = \
-                    (account, len(unmessages_arr), allmessages_num)
                 if get_summaries:
-                    mailinfo.msgs = get_mails(mail, unmessages_arr)
+                    msgs = get_mails(mail, unmessages_arr)
+                else:
+                    msgs = []
+                mailinfo = MInfo(account, len(unmessages_arr),
+                                 allmessages_num, msgs)
         else:
             raise imaplib.IMAP4.error()
     except:
-        (mailinfo.account, mailinfo.unread, mailinfo.total) = \
-            (account, None, None)
+        mailinfo = MInfo(account, None, None)
     finally:
         if mail.state != 'NONAUTH':
             mail.close()
@@ -82,20 +83,19 @@ def checknew(q, account, user, pw, server, get_summaries=False, folder="INBOX"):
 def get_mails(mail, msg_ids):
     '''return mail summaries for given msg_ids'''
     msgs = []
+    EmailSummary = namedtuple('EmailSummary', ['num', 'fromad', 'subject', 'date'])
     try:
         for num in msg_ids:
             typ, data = mail.fetch(num, '(RFC822)')
             msg = email.message_from_string(data[0][1])
-            email_summ = namedtuple('EmailSummary', ['num', 'fromad', 'subject', 'date'])
             subj = msg['Subject']
             # decode subject if in unicode format
             # TODO: test for UTF-8 better than below
             if 'UTF-8' in subj:
                 decd_subj = decode_header(subj)
+                # TODO: what is default_charset?
                 subj = ''.join([ unicode(t[0], t[1] or default_charset) for t in decd_subj ])
-                email_summ.num, email_summ.fromad, email_summ.subject = \
-                                                                        int(num), msg['From'], subj
-
+            email_summ = EmailSummary(int(num), msg['From'], subj, None)
             msgs.append(email_summ)
     except:
         # if any errors just don't list mails
@@ -105,6 +105,7 @@ def get_mails(mail, msg_ids):
 def format_mailsummaries(mailinfos):
     '''takes list of MailInfo tuple & returns formatted string of mails'''
     summstr = ''
+    # TODO: build up array & join it instead
     for mailinfo in mailinfos:
         for summ in mailinfo.msgs:
             summstr +=  "[%s] [%0.4d] %.25s  %.40s\n" % (mailinfo.account, summ.num, \
@@ -112,6 +113,7 @@ def format_mailsummaries(mailinfos):
     return summstr
 
 def format_msgcnt(options, accounts):
+    '''returns string with account overview (read/unread)'''
     output = ''
     for acct in accounts:
         if options.short:
@@ -128,6 +130,7 @@ def format_msgcnt(options, accounts):
 
 
 def main():
+    '''load options, start check threads and display results'''
     cmd_options = getopts()
     config = readconf()
     accounts = config.sections()
