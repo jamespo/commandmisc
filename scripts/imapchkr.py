@@ -104,19 +104,23 @@ def get_mails(mail, msg_ids):
 def clean_address(email_addr):
     '''return clean from address'''
     clean_addr = parseaddr(email_addr)
-    return clean_addr[0] or clean_addr[1]
+    return unicode_to_str(clean_addr[0] or clean_addr[1])
 
 def clean_subject(subj):
     '''decode subject if in unicode format'''
-    # TODO: test for UTF-8 better than below
-    if 'UTF-8' in subj:
-        decd_subj = decode_header(subj)
-        # TODO: what is default_charset?
-        subj = ''.join([ unicode(t[0], t[1] or default_charset) for t in decd_subj ])
+    subj = unicode_to_str(subj)
     # remove newlines
     subj = subj.replace('\r', '')
     subj = subj.replace('\n', '')   
     return subj
+
+def unicode_to_str(chars):
+    '''convert unicode to plain str if required'''
+    # TODO: test for UTF-8 better than below
+    if 'UTF-8' in chars.upper():
+        decd_chars = decode_header(chars)
+        chars = ''.join([ unicode(t[0], t[1]) for t in decd_chars ]).encode("utf8","ignore")
+    return chars
 
 def format_mailsummaries(options, mailinfos, acct_cols):
     '''takes list of MailInfo tuple & returns formatted string of mails'''
@@ -125,10 +129,11 @@ def format_mailsummaries(options, mailinfos, acct_cols):
     for mailinfo in mailinfos:
         account_name = mailinfo.account
         if options.color:
-            account_name = '%s%s%s' % (acct_cols[account_name], account_name,
-                                       colm.norm)
+            account_name = '%s%s%s' % (acct_cols[account_name], account_name, colm.norm)
+        # spaces to pad account name with (colouring breaks padding)
+        acct_spc = ' ' * (ac_max_len - len(mailinfo.account))
         for summ in mailinfo.msgs:
-            summaries.append("[{acct:{ac_max_len}}] [{summ.num:04d}] {summ.fromad:25} {summ.subject:40}".format(acct=account_name, ac_max_len=ac_max_len, summ=summ))
+            summaries.append('[{acct_spc}{acct}] [{summ.num:04d}] {summ.fromad:25} {summ.subject:40}'.format(acct=account_name, ac_max_len=ac_max_len, summ=summ, acct_spc=acct_spc))
     return "\n".join(summaries)
 
 def format_msgcnt(options, mailtotals, acct_cols):
