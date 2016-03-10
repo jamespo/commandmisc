@@ -93,9 +93,8 @@ def get_mails(mail, msg_ids):
         for num in msg_ids:
             typ, data = mail.fetch(num, '(RFC822)')
             msg = email.message_from_string(data[0][1])
-            subj = clean_subject(msg['Subject'])
-            fromad = clean_address(msg['From'])
-            email_summ = EmailSummary(int(num), fromad, subj, None)
+            email_summ = EmailSummary(int(num), clean_address(msg['From']),
+                                      clean_subject(msg['Subject']), None)
             msgs.append(email_summ)
     except:
         # if any errors just don't list mails
@@ -119,28 +118,36 @@ def clean_subject(subj):
     subj = subj.replace('\n', '')   
     return subj
 
-def format_mailsummaries(mailinfos):
+def format_mailsummaries(options, mailinfos, acct_cols):
     '''takes list of MailInfo tuple & returns formatted string of mails'''
     ac_max_len = max((len(mailinfo.account) for mailinfo in mailinfos))
     summaries = []
     for mailinfo in mailinfos:
+        account_name = mailinfo.account
+        if options.color:
+            account_name = '%s%s%s' % (acct_cols[account_name], account_name,
+                                       colm.norm)
         for summ in mailinfo.msgs:
-            summaries.append("{acct:{ac_max_len}} [{summ.num:04d}] {summ.fromad:25} {summ.subject:40}".format(acct=mailinfo.account, ac_max_len=ac_max_len, summ=summ))
+            summaries.append("[{acct:{ac_max_len}}] [{summ.num:04d}] {summ.fromad:25} {summ.subject:40}".format(acct=account_name, ac_max_len=ac_max_len, summ=summ))
     return "\n".join(summaries)
 
-def format_msgcnt(options, mailtotals):
+def format_msgcnt(options, mailtotals, acct_cols):
     '''returns string with account overview (read/unread)'''
     output = ''
     for mailtotal in mailtotals:
+        account_name = mailtotal.account
+        if options.color:
+            account_name = '%s%s%s' % (acct_cols[account_name], account_name,
+                                       colm.norm)
         if options.short:
-            output += "%s:%s " % (mailtotal.account[0], mailtotal.unread)
+            output += "%s:%s " % (account_name[0], mailtotal.unread)
         elif None in (mailtotal.unread, mailtotal.total):
-            output += '[%s: unknown] ' % mailtotal.account
+            output += '[%s: unknown] ' % account_name
         elif options.color and mailtotal.unread > 0:
-            output += '[%s: %s%d/%d%s] ' % (mailtotal.account, colm.white,
+            output += '[%s: %s%d/%d%s] ' % (account_name, colm.white,
                                             mailtotal.unread, mailtotal.total, colm.norm)
         else:
-            output += '[%s: %d/%d] ' % (mailtotal.account, mailtotal.unread, mailtotal.total)
+            output += '[%s: %d/%d] ' % (account_name, mailtotal.unread, mailtotal.total)
     output = output.rstrip()
     return output
 
@@ -160,13 +167,16 @@ def main():
                                      cmd_options.listmail))
         t.start()
     mailtotals = []
-    for account in accounts:
+    acct_cols = {}  # dict of account name : colour
+    for acct_num, account in enumerate(accounts):
         msg_results = q.get()
         mailtotals.append(msg_results)
-    print format_msgcnt(cmd_options, mailtotals)
+        # store colour for account
+        acct_cols[account] = colm[ (acct_num % (len(colm)-2))+2 ]
+    print format_msgcnt(cmd_options, mailtotals, acct_cols)
     # display email summaries if chosen and any new mails
-    if cmd_options.listmail and any([msg.unread > 0 for msg in mailtotals]):
-        print format_mailsummaries(mailtotals).rstrip()
+    if cmd_options.listmail and any((msg.unread > 0 for msg in mailtotals)):
+        print format_mailsummaries(cmd_options, mailtotals, acct_cols)
 
 if __name__ == '__main__':
     main()
