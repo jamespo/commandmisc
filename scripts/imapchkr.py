@@ -8,6 +8,14 @@
 # password=2347923rbkaa
 # server=yourimapserver.com
 
+from __future__ import print_function
+try:
+    from future import standard_library
+    standard_library.install_aliases()
+except ImportError:
+    # py3
+    pass
+from builtins import str
 import os
 import imaplib
 import email
@@ -15,8 +23,8 @@ from email.header import decode_header
 from email.utils import parseaddr
 from optparse import OptionParser
 from collections import namedtuple
-import ConfigParser
-import Queue
+import configparser
+import queue
 import threading
 
 # tuple of shell colour codes
@@ -38,7 +46,7 @@ def getopts():
 
 def readconf():
     '''returns ConfigParser object with account details'''
-    config = ConfigParser.ConfigParser()
+    config = configparser.ConfigParser()
     config.read(os.path.expanduser('~/.config/.imapchkr.conf'))
     return config
 
@@ -73,7 +81,7 @@ def count_mails(mail, MInfo, folder, account, get_summaries):
             mailinfo = MInfo(account, 0, allmessages_num, [])
         else:
             # new mails found
-            unmessages_arr = unmessages[0].split(' ')
+            unmessages_arr = str(unmessages[0]).split(' ')
             if get_summaries:
                 msgs = get_mails(mail, unmessages_arr)
             else:
@@ -119,7 +127,7 @@ def unicode_to_str(chars):
     # TODO: test for UTF-8 better than below
     if 'UTF-8' in chars.upper():
         decd_chars = decode_header(chars)
-        chars = ''.join([ unicode(t[0], t[1]) for t in decd_chars ]).encode("utf8","ignore")
+        chars = ''.join([ str(t[0], t[1]) for t in decd_chars ]).encode("utf8","ignore")
     return chars
 
 def format_mailsummaries(options, mailinfos, acct_cols):
@@ -162,7 +170,7 @@ def main():
     cmd_options = getopts()
     config = readconf()
     accounts = config.sections()
-    q = Queue.Queue(len(accounts))
+    q = queue.Queue(len(accounts))
     for account in accounts:
         user, pw, server = (config.get(account, 'user'),
                             config.get(account, 'password'),
@@ -178,10 +186,10 @@ def main():
         mailtotals.append(msg_results)
         # store colour for account
         acct_cols[account] = colm[ (acct_num % (len(colm)-2))+2 ]
-    print format_msgcnt(cmd_options, mailtotals, acct_cols)
+    print(format_msgcnt(cmd_options, mailtotals, acct_cols))
     # display email summaries if chosen and any new mails
     if cmd_options.listmail and any((msg.unread > 0 for msg in mailtotals)):
-        print format_mailsummaries(cmd_options, mailtotals, acct_cols)
+        print(format_mailsummaries(cmd_options, mailtotals, acct_cols))
 
 if __name__ == '__main__':
     main()
