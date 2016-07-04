@@ -15,7 +15,8 @@ def main(ticker):
     # hack to remove leading comment
     quote_json = r.content.lstrip().lstrip('/')
     results = json.loads(quote_json)[0]
-    print('%s: %s (%s%%)' % (results['t'], results['l'], results['cp_fix']))
+    print('%s: %s (%s%%)' % (results['t'], results['l'], results['cp_fix']),
+          end = '')
     
 if __name__ == '__main__':
     try:
