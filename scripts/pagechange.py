@@ -53,10 +53,14 @@ class Page(object):
             
 class PageChange(object):
 
-    def __init__(self):
+    def __init__(self, browser):
         '''instantiate webdriver'''
-        #self.driver = webdriver.Firefox()
-        self.driver = webdriver.Chrome()
+        if browser == 'firefox':
+            self.driver = webdriver.Firefox()
+        elif browser == 'chrome':
+            self.driver = webdriver.Chrome()
+        else:
+            raise ValueError('No valid webdriver found')
         self.waittime = 5
         self.xpmatch = None
         
@@ -85,6 +89,8 @@ def get_options():
     parser.add_option("-x", help="xpath", dest="xpath")
     parser.add_option("-m", help="mode (add|check|list)", dest="mode",
                       default="add")
+    parser.add_option("-b", help="browser", dest="browser",
+                      default="chrome")
     (options, args) = parser.parse_args()
     return (options, args)
 
@@ -104,8 +110,8 @@ def list_pages():
         print check
 
 
-def check_pages():
-    pc = PageChange()
+def check_pages(browser):
+    pc = PageChange(browser=browser)
     for check in get_all_checks():
         pc.check(check)
         if pc.update_page(check):
@@ -115,7 +121,7 @@ def check_pages():
 
 def add_page(options):
     p = Page(options.url, options.xpath)
-    pc = PageChange()
+    pc = PageChange(browser=options.browser)
     try:
         pc.check(p)
     except:
@@ -135,7 +141,7 @@ def main():
     elif options.mode == 'list':
         list_pages()
     elif options.mode == 'check':
-        check_pages()
+        check_pages(browser=options.browser)
 
 if __name__ == '__main__':
     main()
