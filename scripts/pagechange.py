@@ -104,6 +104,15 @@ def list_pages():
         print check
 
 
+def check_pages():
+    pc = PageChange()
+    for check in get_all_checks():
+        pc.check(check)
+        if pc.update_page(check):
+            # changed
+            print check
+    pc.driver.close()
+
 def add_page(options):
     p = Page(options.url, options.xpath)
     pc = PageChange()
@@ -125,6 +134,8 @@ def main():
             add_page(options)
     elif options.mode == 'list':
         list_pages()
+    elif options.mode == 'check':
+        check_pages()
 
 if __name__ == '__main__':
     main()
