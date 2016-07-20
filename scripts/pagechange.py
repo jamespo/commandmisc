@@ -23,10 +23,10 @@ class Page(object):
     def __init__(self, url=None, xpath=None, filename=None):
         self.url = url
         self.xpath = xpath
-        self.oldmatch = None
-        self.match = None
+        self.oldmatch = ''
+        self.match = ''
         self.filename = filename
-        self.title = None
+        self.title = ''
 
     def save(self):
         '''Pickle Page object'''
@@ -41,7 +41,8 @@ class Page(object):
     def __str__(self):
         # return self.match.encode('utf-8')
         return "Title: %s\nOld: (%s) New: (%s)\nURL: %s" \
-            % (self.title, self.oldmatch, self.match.encode('utf-8'), self.url)
+            % (self.title.encode('utf-8'), self.oldmatch.encode('utf-8'),
+               self.match.encode('utf-8'), self.url)
 
     def load(self):
         with open(os.path.join(SAVEDIR, self.filename), 'rb') as pfile:
@@ -57,15 +58,25 @@ class PageChange(object):
         #self.driver = webdriver.Firefox()
         self.driver = webdriver.Chrome()
         self.waittime = 5
-
+        self.xpmatch = None
+        
     def check(self, page):
         '''return content in page matching xpath'''
         self.driver.get(page.url)
         self.driver.implicitly_wait(self.waittime)
         # assert "Python" in driver.title
-        xpmatch = self.driver.find_element(By.XPATH, page.xpath)
-        return xpmatch.text
+        self.xpmatch = self.driver.find_element(By.XPATH, page.xpath)
+        return self.xpmatch.text
 
+    def update_page(self, page):
+        '''updates page object'''
+        changed = (self.xpmatch.text != page.match)
+        if changed:
+            page.oldmatch = page.match
+            page.match = self.xpmatch.text
+            page.title = self.driver.title
+            page.save()
+        return changed
 
 def get_options():
     '''parse CLI options'''
@@ -94,16 +105,14 @@ def list_pages():
 
 
 def add_page(options):
-    res = None
     p = Page(options.url, options.xpath)
     pc = PageChange()
     try:
-        res = pc.check(p)
+        pc.check(p)
     except:
         pass
-    p.match = res
-    p.save()
-    print res
+    pc.update_page(p)
+    print p
     pc.driver.close()
 
 
