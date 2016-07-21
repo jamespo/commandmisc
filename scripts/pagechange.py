@@ -14,6 +14,7 @@ import cPickle as pickle
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from optparse import OptionParser
+from pyvirtualdisplay import Display
 
 SAVEDIR = os.path.join(os.path.expanduser('~'), '.pagechange')
 
@@ -110,8 +111,8 @@ def list_pages():
         print check
 
 
-def check_pages(browser):
-    pc = PageChange(browser=browser)
+def check_pages(options):
+    pc = PageChange(browser=options.browser)
     for check in get_all_checks():
         pc.check(check)
         if pc.update_page(check):
@@ -130,6 +131,11 @@ def add_page(options):
     print p
     pc.driver.close()
 
+def virt_display(function, options):
+    display = Display(visible=0, size=(800, 600))
+    display.start()
+    function(options)
+    display.stop()
 
 def main():
     (options, args) = get_options()
@@ -137,11 +143,13 @@ def main():
         if None in (options.url, options.xpath):
             print "No url/xpath provided"
         else:
-            add_page(options)
+            # TODO: add visible switch for add_page(options)
+            virt_display(add_page, options)
     elif options.mode == 'list':
         list_pages()
     elif options.mode == 'check':
-        check_pages(browser=options.browser)
+        # TODO: add visible switch
+        virt_display(check_pages, options)
 
 if __name__ == '__main__':
     main()
