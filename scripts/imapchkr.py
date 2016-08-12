@@ -12,10 +12,10 @@ from __future__ import print_function
 try:
     from future import standard_library
     standard_library.install_aliases()
+    from builtins import str
 except ImportError:
     # py3
     pass
-from builtins import str
 import os
 import imaplib
 import email
@@ -23,8 +23,13 @@ from email.header import decode_header
 from email.utils import parseaddr
 from optparse import OptionParser
 from collections import namedtuple
-import configparser
-import queue
+try:
+    import configparser
+    import queue
+except ImportError:
+    # py2
+    import ConfigParser as configparser
+    import Queue as queue
 import threading
 
 # tuple of shell colour codes

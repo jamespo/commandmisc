@@ -109,6 +109,7 @@ def get_all_checks():
 def list_pages():
     for check in get_all_checks():
         print check
+        print ''
 
 
 def check_pages(options):
