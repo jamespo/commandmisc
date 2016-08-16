@@ -81,12 +81,13 @@ def count_mails(mail, MInfo, folder, account, get_summaries):
     (unretcode, unmessages) = mail.search(None, '(UNSEEN)')
     if (unretcode, allretcode) == ('OK', 'OK'):
         allmessages_num = int(allmessages_str[0])
-        if unmessages[0] == '':
+        unread = unmessages[0].decode("utf-8")
+        if unread == '':
             # no new mails found
             mailinfo = MInfo(account, 0, allmessages_num, [])
         else:
             # new mails found
-            unmessages_arr = str(unmessages[0]).split(' ')
+            unmessages_arr = unread.split(' ')
             if get_summaries:
                 msgs = get_mails(mail, unmessages_arr)
             else:
