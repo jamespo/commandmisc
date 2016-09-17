@@ -21,3 +21,5 @@ asciiweather - quick weather forecast on command line
 if-autocert - automatically accept IMAP TLS certificate for imapfilter
 
 cdx - switch to your other shell's working directories
+
+ip-freely - dynamic DNS updater
