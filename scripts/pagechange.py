@@ -21,7 +21,8 @@ SAVEDIR = os.path.join(os.path.expanduser('~'), '.pagechange')
 
 class Page(object):
 
-    def __init__(self, url=None, xpath=None, filename=None):
+    def __init__(self, savedir, url=None, xpath=None, filename=None):
+        self.savedir = savedir
         self.url = url
         self.xpath = xpath
         self.oldmatch = ''
@@ -34,7 +35,7 @@ class Page(object):
         if self.filename is None:
             # create alphanumeric filename from URL
             self.filename = re.sub('(^https?://|[\W_]+)', '', self.url) + '.pk'
-        fullfilename = os.path.join(SAVEDIR, self.filename)
+        fullfilename = os.path.join(self.savedir, self.filename)
         # print fullfilename
         with open(fullfilename, 'wb') as picklefile:
             pickle.dump(self, picklefile)
@@ -46,7 +47,7 @@ class Page(object):
                self.match.encode('utf-8'), self.url)
 
     def load(self):
-        with open(os.path.join(SAVEDIR, self.filename), 'rb') as pfile:
+        with open(os.path.join(self.savedir, self.filename), 'rb') as pfile:
             a = pickle.load(pfile)
             # copy pickle object into self
             self.__dict__ = a.__dict__.copy()
@@ -91,30 +92,32 @@ def get_options():
     parser.add_option("-m", help="mode (add|check|list)", dest="mode",
                       default="add")
     parser.add_option("-b", help="browser", dest="browser",
-                      default="chrome")
+                      default="firefox")
+    parser.add_option("-d", help="savedir", dest="savedir",
+                      default=os.path.join(os.path.expanduser('~'), '.pagechange'))
     (options, args) = parser.parse_args()
     return (options, args)
 
 
-def get_all_checks():
-    checkfiles = os.listdir(SAVEDIR)
+def get_all_checks(savedir):
+    checkfiles = os.listdir(savedir)
     checks = []
     for cf in checkfiles:
-        check = Page(filename=cf)
+        check = Page(savedir=savedir, filename=cf)
         check.load()
         checks.append(check)
     return checks
                   
 
-def list_pages():
-    for check in get_all_checks():
+def list_pages(savedir):
+    for check in get_all_checks(savedir):
         print check
         print ''
 
 
 def check_pages(options):
     pc = PageChange(browser=options.browser)
-    for check in get_all_checks():
+    for check in get_all_checks(options.savedir):
         pc.check(check)
         if pc.update_page(check):
             # changed
@@ -122,7 +125,7 @@ def check_pages(options):
     pc.driver.close()
 
 def add_page(options):
-    p = Page(options.url, options.xpath)
+    p = Page(options.savedir, options.url, options.xpath)
     pc = PageChange(browser=options.browser)
     try:
         pc.check(p)
@@ -147,7 +150,7 @@ def main():
             # TODO: add visible switch for add_page(options)
             virt_display(add_page, options)
     elif options.mode == 'list':
-        list_pages()
+        list_pages(savedir=options.savedir)
     elif options.mode == 'check':
         # TODO: add visible switch
         virt_display(check_pages, options)
