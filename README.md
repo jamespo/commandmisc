@@ -23,3 +23,6 @@ if-autocert - automatically accept IMAP TLS certificate for imapfilter
 cdx - switch to your other shell's working directories
 
 ip-freely - dynamic DNS updater
+
+cfid - Count Files In Directory, a change from "ls -l | wc -l"
+
