@@ -100,7 +100,7 @@ def get_options():
 
 
 def get_all_checks(savedir):
-    checkfiles = os.listdir(savedir)
+    checkfiles = [cf for cf in os.listdir(savedir) if cf[-3:] == '.pk']
     checks = []
     for cf in checkfiles:
         check = Page(savedir=savedir, filename=cf)
