@@ -33,7 +33,7 @@ class Page(object):
         self.title = ''
 
     def save(self):
-        '''Pickle Page object (self)'''
+        '''Pickle Page object (self) and save to disk'''
         if self.filename is None:
             # create alphanumeric filename from URL
             self.filename = re.sub('(^https?://|[\W_]+)', '', self.url) + '.pk'
@@ -44,12 +44,12 @@ class Page(object):
 
     def __str__(self):
         '''printable representation of self'''
-        return "Title: %s\nOld: (%s) New: (%s)\nURL: %s" \
+        return "Title: %s\nOld: (%s)  New: (%s)\nURL: %s" \
             % (self.title.encode('utf-8'), self.oldmatch.encode('utf-8'),
                self.match.encode('utf-8'), self.url)
 
     def load(self):
-        '''load pickled page object'''
+        '''load pickled page object from disk'''
         with open(os.path.join(self.savedir, self.filename), 'rb') as pfile:
             savedir = self.savedir
             a = pickle.load(pfile)
@@ -84,16 +84,16 @@ class PageChange(object):
         self.driver.delete_all_cookies()
         return self.xpmatch.text
 
-
-    def update_page(self, page):
-        '''updates page object'''
+    def update_page(self, page, forcesave=False):
+        '''updates page object - saves if changed or if forcesave = True'''
         changed = (self.xpmatch.text != page.match)
-        if changed:
+        if changed or forcesave:
             page.oldmatch = page.match
             page.match = self.xpmatch.text
             page.title = self.driver.title
             page.save()
-        return changed
+        return changed or forcesave
+
 
 def get_options():
     '''parse CLI options'''
@@ -106,6 +106,10 @@ def get_options():
                       default="firefox")
     parser.add_option("-d", help="savedir", dest="savedir",
                       default=SAVEDIR)
+    parser.add_option("-f", help="force save", dest="forcesave",
+                      action="store_true", default=False)
+    parser.add_option("-n", help="no headless", dest="noheadless",
+                      action="store_true", default=False)
     (options, args) = parser.parse_args()
     return (options, args)
 
@@ -134,7 +138,7 @@ def check_pages(options):
     for check in get_all_checks(options.savedir):
         try:
             pc.check(check)
-            if pc.update_page(check):
+            if pc.update_page(check, options.forcesave):
                 # changed
                 print check
             elif os.getenv('DEBUG'):
@@ -143,6 +147,7 @@ def check_pages(options):
             # print '%s failed - error: %s' % (check.title, str(e))
             print '%s failed - error: %s' % (check.title, e)
     pc.driver.close()
+
 
 def add_page(options):
     '''add a check'''
@@ -156,12 +161,15 @@ def add_page(options):
         print 'Cannot find match in page - not saving'
     pc.driver.close()
 
+
+# TODO: convert to decorator
 def virt_display(function, options):
     '''launch virtual display (for selenium) and run function'''
     display = Display(visible=0, size=(800, 600))
     display.start()
     function(options)
     display.stop()
+
 
 def main():
     '''check args and run appropriate function'''
@@ -170,13 +178,17 @@ def main():
         if None in (options.url, options.xpath):
             print "No url/xpath provided"
         else:
-            # TODO: add visible switch for add_page(options)
-            virt_display(add_page, options)
+            if options.noheadless:
+                add_page(options)
+            else:
+                virt_display(add_page, options)
     elif options.mode == 'list':
         list_pages(savedir=options.savedir)
     elif options.mode == 'check':
-        # TODO: add visible switch
-        virt_display(check_pages, options)
+        if options.noheadless:
+            check_pages(options)
+        else:
+            virt_display(check_pages, options)
 
 if __name__ == '__main__':
     main()
