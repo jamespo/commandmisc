@@ -25,7 +25,7 @@ if [[ ! -f $SCRIPT ]]; then
 fi
 
 #
-SHEBANG=$(which python)
+SHEBANG="#!$(which python)"
 cp "$SCRIPT" "$COPYPATH/"
 sed -i -e "1s@.*@$SHEBANG@" "$COPYPATH/$SCRIPT"
 echo "Copied $SCRIPT to $COPYPATH with $SHEBANG"
