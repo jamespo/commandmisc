@@ -81,9 +81,9 @@ def main():
     domain = '.'.join(args.hostname.split('.')[1::])
     conffile = create_nsupdate_contents(args.server, domain, args.hostname, ip)
     (stdout, stderr, rc) = run_nsupdate(args.exe, args.privkey, conffile)
+    os.remove(conffile)
     if rc != 0:
         sys.exit("ERROR: nsupdate failed - %s" % stdout + stderr)
-    os.remove(conffile)
         
 if __name__ == "__main__":
     main()
