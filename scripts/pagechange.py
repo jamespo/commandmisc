@@ -13,7 +13,7 @@ import re
 import cPickle as pickle
 from selenium import webdriver
 from selenium.webdriver.common.by import By
-from selenium.common.exceptions import NoSuchElementException
+from selenium.common.exceptions import NoSuchElementException, StaleElementReferenceException
 from optparse import OptionParser
 from pyvirtualdisplay import Display
 
@@ -143,7 +143,7 @@ def check_pages(options):
                 print check
             elif os.getenv('DEBUG'):
                 print 'No change for %s' % check.title
-        except NoSuchElementException as e:
+        except (NoSuchElementException, StaleElementReferenceException) as e:
             # print '%s failed - error: %s' % (check.title, str(e))
             print '%s failed - error: %s' % (check.title, e)
     pc.driver.close()
