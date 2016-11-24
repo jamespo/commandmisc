@@ -142,10 +142,10 @@ def check_pages(options):
                 # changed
                 print check
             elif os.getenv('DEBUG'):
-                print 'No change for %s' % check.title
+                print 'No change for %s' % check.title.encode('utf-8')
         except (NoSuchElementException, StaleElementReferenceException) as e:
             # print '%s failed - error: %s' % (check.title, str(e))
-            print '%s failed - error: %s' % (check.title, e)
+            print '%s failed - error: %s' % (check.title.encode('utf-8'), e)
     pc.driver.close()
 
 
