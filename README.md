@@ -26,3 +26,15 @@ ip-freely - dynamic DNS updater
 
 cfid - Count Files In Directory, a change from "ls -l | wc -l"
 
+copysb.sh - copy python script and change shebang to current virtualenv
+
+pagechange.py - python script to check if HTML page has changed based on XPATH using Selenium
+(can be used with emailifoutput.sh to email on change)
+
+imapchkr.py - biff for IMAPS - supports multiple mailboxes
+
+getquote.py - get a stock quote from Google Finance
+
+smtpsend.py - simple SMTP sender, like mailx
+
+clamsmtp-action.py - VirusAction script for clamsmtp
