@@ -48,7 +48,7 @@ class Dir(object):
         '''return readable difference between files'''
         dt1 = datetime.datetime.fromtimestamp(epoch1)
         dt2 = datetime.datetime.fromtimestamp(epoch2)
-        rd = dateutil.relativedelta.relativedelta (dt2, dt1)
+        rd = dateutil.relativedelta.relativedelta (dt1, dt2)
         return rd
 
 
