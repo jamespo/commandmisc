@@ -7,44 +7,55 @@ from __future__ import print_function
 import datetime
 import time
 import dateutil.relativedelta
-import os
+import os, os.path
 import sys
 
 class Dir(object):
     '''store dir entries with mtimes and operations upon them'''
     def __init__(self, fsitem):
         self.diritems = []   # list of (filename, mtime) tuples
-        self.maxlen = None
+        self.maxlen = 0
         self.curr_time = int(time.time())
         self.populate(fsitem)
 
-    @staticmethod
-    def dir_tuple(filename):
-        return (fsitem, calc_timediff(self.curr_time, filetime(fsitem)))
+    def dir_tuple(self,filename):
+        '''return tuple of (filename, time diff from current) & update self.maxlen
+        with length of filename if > self.maxlen'''
+        if len(filename) > self.maxlen:
+            self.maxlen = len(filename)
+        return (filename, self.calc_timediff(self.curr_time, self.filetime(filename)))
 
     def populate(self, fsitem):
         if os.path.isfile(fsitem):
-            self.diritems.append(dir_tuple(fsitem))
+            self.diritems.append(self.dir_tuple(fsitem))
         elif os.path.isdir(fsitem):
             self.diritems = self.populate_dir(fsitem)
         else:
             raise
-                    
-    def populate_dir(fsitem):
-        return [dir_tuple(f) for f in listdir(fsitem) if isfile(f)]
 
+    def populate_dir(self, fsitem):
+        return [self.dir_tuple(f) for f in os.listdir(fsitem) if os.path.isfile(f)]
+
+    def __str__(self):
+        return "\n".join(["%*s %s" % (self.maxlen, x[0], self.readable_timediff(x[1])) \
+                          for x in self.diritems])
+
+    def __repr__(self):
+        return "\n".join("%s %s" % (x[0], x[1]) for x in self.diritems)
+    
     @staticmethod
     def calc_timediff(epoch1, epoch2):
         '''return readable difference between files'''
         dt1 = datetime.datetime.fromtimestamp(epoch1)
         dt2 = datetime.datetime.fromtimestamp(epoch2)
         rd = dateutil.relativedelta.relativedelta (dt2, dt1)
+        return rd
 
 
     @staticmethod
     def readable_timediff(rd):
-                return "%dy/%dm/%dd %dh:%dm:%ds" % (rd.years, rd.months, rd.days, \
-                                                    rd.hours, rd.minutes, rd.seconds)
+        return "%dy/%dm/%dd %dh:%dm:%ds" % (rd.years, rd.months, rd.days, \
+                                            rd.hours, rd.minutes, rd.seconds)
 
     @staticmethod
     def filetime(filename):
