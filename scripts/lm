@@ -18,20 +18,19 @@ class Dir(object):
         self.curr_time = int(time.time())
         self.populate(fsitem)
 
-    @staticmethod
-    def dir_tuple(filename):
-        return (fsitem, calc_timediff(self.curr_time, filetime(fsitem)))
+    def dir_tuple(self, fsitem):
+        return (fsitem, Dir.calc_timediff(self.curr_time, Dir.filetime(fsitem)))
 
     def populate(self, fsitem):
         if os.path.isfile(fsitem):
-            self.diritems.append(dir_tuple(fsitem))
+            self.diritems.append(self.dir_tuple(fsitem))
         elif os.path.isdir(fsitem):
             self.diritems = self.populate_dir(fsitem)
         else:
             raise
-                    
-    def populate_dir(fsitem):
-        return [dir_tuple(f) for f in listdir(fsitem) if isfile(f)]
+
+    def populate_dir(self, fsitem):
+        return [self.dir_tuple(f) for f in os.listdir(fsitem) if os.path.isfile(f)]
 
     @staticmethod
     def calc_timediff(epoch1, epoch2):
@@ -39,22 +38,31 @@ class Dir(object):
         dt1 = datetime.datetime.fromtimestamp(epoch1)
         dt2 = datetime.datetime.fromtimestamp(epoch2)
         rd = dateutil.relativedelta.relativedelta (dt2, dt1)
+        return rd
 
 
     @staticmethod
     def readable_timediff(rd):
-                return "%dy/%dm/%dd %dh:%dm:%ds" % (rd.years, rd.months, rd.days, \
-                                                    rd.hours, rd.minutes, rd.seconds)
+        '''readable version of timedelta object'''
+        return "%dy/%dm/%dd %dh:%dm:%ds" % (rd.years, rd.months, rd.days, \
+                                            rd.hours, rd.minutes, rd.seconds)
 
     @staticmethod
     def filetime(filename):
         '''return last modified time for filename'''
         return int(os.stat(filename).st_mtime)
 
+    def __str__(self):
+        strout = []
+        for di in self.diritems:
+            strout.append('%s %s' % (Dir.readable_timediff(di[1]), di[0]))
+        return '\n'.join(strout)
+
 def main():
     filename = sys.argv[1]
     d = Dir(filename)
     print(d)
+    print(d.diritems)
 
 
 if __name__ == '__main__':
