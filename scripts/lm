@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-# lm - LsModified
+# lm - LsModified - show how long ago a file (or files in dir) were modified
 # -*-Python-*-
 
 from __future__ import print_function
@@ -10,21 +10,51 @@ import dateutil.relativedelta
 import os
 import sys
 
-def calc_timediff(epoch1, epoch2):
-    dt1 = datetime.datetime.fromtimestamp(epoch1)
-    dt2 = datetime.datetime.fromtimestamp(epoch2)
-    rd = dateutil.relativedelta.relativedelta (dt2, dt1)
-    return "%dy/%dm/%dd %dh:%dm:%ds" % (rd.years, rd.months, rd.days, rd.hours, rd.minutes, rd.seconds)
+class Dir(object):
+    '''store dir entries with mtimes and operations upon them'''
+    def __init__(self, fsitem):
+        self.diritems = []   # list of (filename, mtime) tuples
+        self.maxlen = None
+        self.curr_time = int(time.time())
+        self.populate(fsitem)
 
-def filetime(filename):
-    '''return last modified time for filename'''
-    return int(os.stat(filename).st_mtime)
+    @staticmethod
+    def dir_tuple(filename):
+        return (fsitem, calc_timediff(self.curr_time, filetime(fsitem)))
+
+    def populate(self, fsitem):
+        if os.path.isfile(fsitem):
+            self.diritems.append(dir_tuple(fsitem))
+        elif os.path.isdir(fsitem):
+            self.diritems = self.populate_dir(fsitem)
+        else:
+            raise
+                    
+    def populate_dir(fsitem):
+        return [dir_tuple(f) for f in listdir(fsitem) if isfile(f)]
+
+    @staticmethod
+    def calc_timediff(epoch1, epoch2):
+        '''return readable difference between files'''
+        dt1 = datetime.datetime.fromtimestamp(epoch1)
+        dt2 = datetime.datetime.fromtimestamp(epoch2)
+        rd = dateutil.relativedelta.relativedelta (dt2, dt1)
+
+
+    @staticmethod
+    def readable_timediff(rd):
+                return "%dy/%dm/%dd %dh:%dm:%ds" % (rd.years, rd.months, rd.days, \
+                                                    rd.hours, rd.minutes, rd.seconds)
+
+    @staticmethod
+    def filetime(filename):
+        '''return last modified time for filename'''
+        return int(os.stat(filename).st_mtime)
 
 def main():
-    curr_time = int(time.time())
     filename = sys.argv[1]
-    file_time = filetime(filename)
-    print("%s %s" % (filename, calc_timediff(file_time, curr_time)))
+    d = Dir(filename)
+    print(d)
 
 
 if __name__ == '__main__':

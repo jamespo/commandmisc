@@ -11,14 +11,20 @@ import os
 import os.path
 import re
 import cPickle as pickle
+import time
 from selenium import webdriver
 from selenium.webdriver.common.by import By
-from selenium.common.exceptions import NoSuchElementException, StaleElementReferenceException
+from selenium.common.exceptions import \
+    NoSuchElementException, StaleElementReferenceException
 from optparse import OptionParser
 from pyvirtualdisplay import Display
 
 # default
 SAVEDIR = os.path.join(os.path.expanduser('~'), '.pagechange')
+
+
+class EmptyMatchException(Exception):
+    pass
 
 
 class Page(object):
@@ -28,6 +34,7 @@ class Page(object):
         self.url = url
         self.xpath = xpath
         self.oldmatch = ''
+        self.datetime = ''
         self.match = ''
         self.filename = filename
         self.title = ''
@@ -44,9 +51,9 @@ class Page(object):
 
     def __str__(self):
         '''printable representation of self'''
-        return "Title: %s\nOld: (%s)  New: (%s)\nURL: %s" \
+        return "Title: %s\nOld: (%s)   New: (%s)\nChanged: %s\nURL: %s" \
             % (self.title.encode('utf-8'), self.oldmatch.encode('utf-8'),
-               self.match.encode('utf-8'), self.url)
+               self.match.encode('utf-8'), self.datetime, self.url)
 
     def load(self):
         '''load pickled page object from disk'''
@@ -58,7 +65,7 @@ class Page(object):
             # restore savedir
             self.savedir = savedir
 
-            
+
 class PageChange(object):
 
     def __init__(self, browser):
@@ -71,7 +78,7 @@ class PageChange(object):
             raise ValueError('No valid webdriver found')
         self.waittime = 5
         self.xpmatch = None
-        
+
     def check(self, page):
         '''return content in page matching xpath'''
         # insert dummy about to wipe referer
@@ -86,11 +93,14 @@ class PageChange(object):
 
     def update_page(self, page, forcesave=False):
         '''updates page object - saves if changed or if forcesave = True'''
+        if page.match == '':
+            raise EmptyMatchException('blank match')
         changed = (self.xpmatch.text != page.match)
         if changed or forcesave:
             page.oldmatch = page.match
             page.match = self.xpmatch.text
             page.title = self.driver.title
+            page.datetime = time.strftime('%d-%m-%Y %X %Z')
             page.save()
         return changed or forcesave
 
@@ -123,7 +133,7 @@ def get_all_checks(savedir):
         check.load()
         checks.append(check)
     return checks
-                  
+
 
 def list_pages(savedir):
     '''displays all checks in savedir'''
@@ -146,6 +156,8 @@ def check_pages(options):
         except (NoSuchElementException, StaleElementReferenceException) as e:
             # print '%s failed - error: %s' % (check.title, str(e))
             print '%s failed - error: %s' % (check.title.encode('utf-8'), e)
+        except EmptyMatchException:
+            print "Match returned empty string"
     pc.driver.close()
 
 
@@ -159,6 +171,8 @@ def add_page(options):
         print p
     except NoSuchElementException:
         print 'Cannot find match in page - not saving'
+    except EmptyMatchException:
+        print 'Match returns empty string - not saving'
     pc.driver.close()
 
 
@@ -189,6 +203,7 @@ def main():
             check_pages(options)
         else:
             virt_display(check_pages, options)
+
 
 if __name__ == '__main__':
     main()
