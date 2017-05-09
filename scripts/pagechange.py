@@ -94,7 +94,7 @@ class PageChange(object):
     def update_page(self, page, forcesave=False):
         '''updates page object - saves if changed or if forcesave = True'''
         if page.match == '':
-            raise EmptyMatchException('blank match')
+            raise EmptyMatchException('blank match in %s' % self.driver.title)
         changed = (self.xpmatch.text != page.match)
         if changed or forcesave:
             page.oldmatch = page.match
@@ -157,7 +157,7 @@ def check_pages(options):
             # print '%s failed - error: %s' % (check.title, str(e))
             print '%s failed - error: %s' % (check.title.encode('utf-8'), e)
         except EmptyMatchException:
-            print "Match returned empty string"
+            print "Match returned empty string for %s" % check.title.encode('utf-8')
     pc.driver.close()
 
 
