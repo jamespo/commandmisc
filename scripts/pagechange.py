@@ -13,7 +13,8 @@ import re
 import cPickle as pickle
 from selenium import webdriver
 from selenium.webdriver.common.by import By
-from selenium.common.exceptions import NoSuchElementException, StaleElementReferenceException
+from selenium.common.exceptions import NoSuchElementException, \
+    StaleElementReferenceException
 from optparse import OptionParser
 from pyvirtualdisplay import Display
 
@@ -79,6 +80,8 @@ class PageChange(object):
         self.driver.get(page.url)
         self.driver.implicitly_wait(self.waittime)
         # assert "Python" in driver.title
+        if os.getenv('DEBUG'):
+            print self.driver.page_source
         self.xpmatch = self.driver.find_element(By.XPATH, page.xpath)
         # cookie cleanup - make optional?
         self.driver.delete_all_cookies()
