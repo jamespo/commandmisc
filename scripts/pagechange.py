@@ -81,7 +81,7 @@ class PageChange(object):
         self.driver.implicitly_wait(self.waittime)
         # assert "Python" in driver.title
         if os.getenv('DEBUG'):
-            print self.driver.page_source
+            print self.driver.page_source.encode('utf-8')
         self.xpmatch = self.driver.find_element(By.XPATH, page.xpath)
         # cookie cleanup - make optional?
         self.driver.delete_all_cookies()
