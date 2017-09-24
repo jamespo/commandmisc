@@ -4,15 +4,45 @@
 
 from __future__ import print_function
 from optparse import OptionParser
+from tempfile import NamedTemporaryFile
+from shutil import copyfile
 import os
 
 
+def mod_file(myfile, original, replacement):
+    '''modify file - make copy and overwrite'''
+    file_modified, file_in_error = False, False
+    try:
+        with open(myfile) as f, \
+             NamedTemporaryFile(delete=False) as w:
+            for inline in f:
+                newline = inline.replace(original, replacement)
+                if newline != inline:
+                    file_modified = True
+                w.write(newline.encode())
+    except:
+        file_in_error = True
+    # copy over if modified
+    if file_modified and not file_in_error:
+        try:
+            copyfile(w.name, myfile)
+        except:
+            # copy failed
+            file_modified = False
+            file_in_error = True
+    os.remove(w.name)
+    return file_modified, file_in_error
+
+    
 def mod_files(files, original, replacement):
     '''change the files - returns set of changed filenames'''
     changed_files, error_files = set(), set()
     for f in files:
-        # TODO: actually change the file
-        pass
+        file_modified, file_in_error = mod_file(f, original, replacement)
+        if file_modified:
+            changed_files.add(f)
+        if file_in_error:
+            error_files.add(f)
     return changed_files, error_files
 
 
@@ -32,7 +62,7 @@ def display_files(files, changed_files, error_files):
     if changed_files:
         print("Files found & changed:")
         print(format_files(changed_files))
-    if changed_files:
+    if error_files:
         print("Files found & returned error:")
         print(format_files(error_files))
 
@@ -68,6 +98,7 @@ def getopts():
                       help="don't change files")
     (options, args) = parser.parse_args()
     return options
+
 
 def main():
     options = getopts()
