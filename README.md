@@ -4,6 +4,8 @@ commandmisc
 random short scripts for Linux / UNIX
 
 
+recrepy.py - recursively replace text in files
+
 imap2rss.pl - reads your IMAP mailbox, creates an RSS feed
 
 gmail-spamassassin - runs spamassassin against your gmail INBOX
