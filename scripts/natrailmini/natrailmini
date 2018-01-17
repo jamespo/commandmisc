@@ -15,9 +15,15 @@ from __future__ import print_function
 from nredarwin.webservice import DarwinLdbSession
 from optparse import OptionParser
 import os
-import ConfigParser
+try:
+    import configparser
+except ImportError:
+    import ConfigParser as configparser
 import json
-from cStringIO import StringIO
+try:
+    from StringIO import StringIO
+except ImportError:
+    from io import StringIO
 
 
 class StationName(object):
@@ -45,7 +51,7 @@ class StationName(object):
 
 def readconf():
     '''read config file'''
-    config = ConfigParser.ConfigParser()
+    config = configparser.ConfigParser()
     config.read(['/etc/check_darwin', os.path.expanduser('~/.config/.check_darwin')])
     return (config.get('Main', 'api_key'), config.get('Main', 'wsdl'))
 
@@ -55,7 +61,7 @@ def create_session(api_key, wsdl):
 
 
 def find_trains(darwin_sess, from_stn, to_stn, st_n):
-    '''find delays between to & from stations'''
+    '''find trains between to & from stations'''
     board = darwin_sess.get_station_board(from_stn)
     trains = board.train_services
     # find trains going to our destination
@@ -68,10 +74,20 @@ def find_trains(darwin_sess, from_stn, to_stn, st_n):
             if st_n.name2code(calling_point.location_name) == to_stn:
                 trains_onroute.append(train)
                 break
-    delayed_trains = [ train for train in trains_onroute if train.etd != 'On time' ]
     # returns zip of [(train time,'On time'),] 
     return zip([trn.std for trn in trains_onroute],
                [trn.etd for trn in trains_onroute])
+
+
+def output_small(from_stn, to_stn, timetable):
+    '''short display output'''
+    output = []
+    for trn_time, trn_ontime in timetable:
+        if trn_ontime == 'On time':
+            output.append(trn_time)
+        else:
+            output.append("!%s" % trn_time)
+    return  "%s>%s: %s" % (from_stn, to_stn, ', '.join(output))
 
 
 def get_cli_options():
@@ -100,7 +116,7 @@ def main():
         api_key, wsdl = readconf()
         sess = create_session(api_key, wsdl)
         train_details = find_trains(sess, from_stn, to_stn, st_n)
-        status = str(train_details)
+        status = output_small(from_stn, to_stn, train_details)
     print(status)
 
 
