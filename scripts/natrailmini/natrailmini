@@ -1,0 +1,108 @@
+#!/usr/bin/env python
+# -*- coding:utf-8 -*-
+
+# natrailmini - CLI for National Rail departures
+# based on check_darwin
+#
+# (c) James Powell / jamespo [at] gmail /  2018
+#
+# requires nre-darwin-py
+# & a configparser format config file in /etc/check_darwin with
+# one section Main with keys wsdl and api_key
+
+from __future__ import print_function
+
+from nredarwin.webservice import DarwinLdbSession
+from optparse import OptionParser
+import os
+import ConfigParser
+import json
+from cStringIO import StringIO
+
+
+class StationName(object):
+    '''converts station to name & vice versa'''
+    # use json in format of https://github.com/fasteroute/national-rail-stations/blob/master/stations.json
+    # (suggest cutting this down for actual use)
+    def __init__(self, jsonfile):
+        self.code2name_lookup = {}
+        self.name2code_lookup = {}
+        with open(jsonfile) as jsf:
+            js = json.loads(jsf.read())
+        for station in js['locations']:
+            self.code2name_lookup[station['crs']] = station['name']
+            self.name2code_lookup[station['name']] = station['crs']
+
+    def name2code(self, name):
+        '''take name return code (blank if not found)'''
+        return self.name2code_lookup.get(name, '')
+
+
+    def code2name(self, code):
+        '''take code return name (blank if not found)'''
+        return self.code2name_lookup,get(name, '')
+
+
+def readconf():
+    '''read config file'''
+    config = ConfigParser.ConfigParser()
+    config.read(['/etc/check_darwin', os.path.expanduser('~/.config/.check_darwin')])
+    return (config.get('Main', 'api_key'), config.get('Main', 'wsdl'))
+
+def create_session(api_key, wsdl):
+    '''create darwin session'''
+    return DarwinLdbSession(wsdl=wsdl, api_key=api_key)
+
+
+def find_trains(darwin_sess, from_stn, to_stn, st_n):
+    '''find delays between to & from stations'''
+    board = darwin_sess.get_station_board(from_stn)
+    trains = board.train_services
+    # find trains going to our destination
+    trains_onroute = []
+    for train in trains:
+        # TODO: cache these details by service_id
+        train_details = darwin_sess.get_service_details(train.service_id)
+        for calling_point in train_details.subsequent_calling_point_lists[0].calling_points:
+            # print calling_point.location_name
+            if st_n.name2code(calling_point.location_name) == to_stn:
+                trains_onroute.append(train)
+                break
+    delayed_trains = [ train for train in trains_onroute if train.etd != 'On time' ]
+    # returns zip of [(train time,'On time'),] 
+    return zip([trn.std for trn in trains_onroute],
+               [trn.etd for trn in trains_onroute])
+
+
+def get_cli_options():
+    parser = OptionParser()
+    parser.add_option("-f", "--from", help="Departure Station Code (from)",
+                      dest="from_stn", default=None)
+    parser.add_option("-t", "--to", help="Destination Station Code (to)",
+                      dest="to_stn", default=None)
+    parser.add_option("-j", "--jsonfile", help="Station to code lookup file",
+                      dest="jsonfile", default="stations.json")
+    (options, args) = parser.parse_args()
+    if options.from_stn is None or options.to_stn is None:
+        return (None, None, None)
+    else:
+        return (options.from_stn.upper(), options.to_stn.upper(),
+                options.jsonfile)
+
+    
+# start of main program
+def main():
+    from_stn, to_stn, jsonfile = get_cli_options()
+    st_n = StationName(jsonfile)
+    if None in (from_stn, to_stn):
+        status = 'Invalid arguments'
+    else:
+        api_key, wsdl = readconf()
+        sess = create_session(api_key, wsdl)
+        train_details = find_trains(sess, from_stn, to_stn, st_n)
+        status = str(train_details)
+    print(status)
+
+
+if __name__ == "__main__":
+    main()
