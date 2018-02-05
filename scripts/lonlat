@@ -6,6 +6,7 @@
 from optparse import OptionParser
 import dbm.gnu as dbm
 from os.path import expanduser, join
+import json
 
 def getopts():
     '''parse CLI options'''
@@ -15,8 +16,8 @@ def getopts():
     parser.add_option("-f", help="input file", dest="infile")
     parser.add_option("-d", help="database file", dest="dbfile",
                       default=defaultdb)
-    parser.add_option("-o", help="output format (text|json)",
-                      dest="outform", default="json")
+    parser.add_option("-o", help="output format (text|json|short)",
+                      dest="outform", default="short")
     parser.add_option("-m", help="mode (generate|lookup|usage)",
                       dest="mode", default="lookup")
     (options, args) = parser.parse_args()
@@ -36,7 +37,21 @@ def generate_dbm(opts):
 def lookup(opts):
     '''lookup town in DBM'''
     with dbm.open(opts.dbfile) as db:
-        return db.get(opts.town)
+        result = db.get(opts.town)
+    if result:
+        lon, lat = result.decode("utf-8").split(',')
+    else:
+        lon, lat = 'Not found', 'Not found'
+    if opts.outform == "short":
+        return result
+    elif opts.outform == "json":
+        return json.dumps([ {'town' : opts.town.title()},
+                            {'lon' : lon},
+                            {'lat' : lat} ])
+    else:
+        return('\n'.join(['Town: %s' % opts.town.title(),
+                          'Lon: %s' % lon,
+                          'Lat: %s' % lat]))
 
 
 def usage():

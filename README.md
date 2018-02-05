@@ -3,6 +3,7 @@ commandmisc
 
 random short scripts for Linux / UNIX
 
+lonlat - lookup longitude & latitude from commandline given town name
 
 recrepy.py - recursively replace text in files
 
