@@ -43,7 +43,7 @@ def lookup(opts):
     else:
         lon, lat = 'Not found', 'Not found'
     if opts.outform == "short":
-        return result.decode("utf-8")
+        return (','.join([lon,lat]))
     elif opts.outform == "json":
         return json.dumps([ {'town' : opts.town.title()},
                             {'lon' : lon},
