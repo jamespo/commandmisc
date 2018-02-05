@@ -1,0 +1,66 @@
+#!/usr/bin/env python3
+
+# -*-Python-*-
+# lonlat - get longtitude/latitude from town name
+
+from optparse import OptionParser
+import dbm.gnu as dbm
+from os.path import expanduser, join
+
+def getopts():
+    '''parse CLI options'''
+    defaultdb = join(expanduser('~'), '.config/lonlat.db')
+    parser = OptionParser()
+    parser.add_option("-t", help="town", dest="town")
+    parser.add_option("-f", help="input file", dest="infile")
+    parser.add_option("-d", help="database file", dest="dbfile",
+                      default=defaultdb)
+    parser.add_option("-o", help="output format (text|json)",
+                      dest="outform", default="json")
+    parser.add_option("-m", help="mode (generate|lookup|usage)",
+                      dest="mode", default="lookup")
+    (options, args) = parser.parse_args()
+    return options
+
+
+def generate_dbm(opts):
+    '''generate dbm file from TSV'''
+    with open(opts.infile) as infile:
+        with dbm.open(opts.dbfile, 'c') as db:
+            for line in infile:
+                cols = line.split('\t')
+                town, lon, lat = cols[1].lower(), cols[4], cols[5]
+                db[town] = "%s,%s" % (lon, lat)
+
+
+def lookup(opts):
+    '''lookup town in DBM'''
+    with dbm.open(opts.dbfile) as db:
+        return db.get(opts.town)
+
+
+def usage():
+    '''print usage'''
+    usage = '''
+Download & unzip a txt file from http://download.geonames.org/export/dump/
+
+Then run lonlat -m generate -f GB.txt
+
+Then you can do lookups eg lonlat -t Barking
+'''
+    return usage
+
+
+def main():
+    opts = getopts()
+    if opts.mode == 'usage':
+        print(usage())
+    elif opts.mode == 'generate':
+        generate_dbm(opts)
+    elif opts.mode == 'lookup':
+        opts.town = opts.town.lower()
+        print(lookup(opts))
+
+
+if __name__ == '__main__':
+    main()
