@@ -62,12 +62,13 @@ def checknew(q, account, user, pw, server, get_summaries=False, folder="INBOX"):
     try:
         # connect to mailserver
         mail = imaplib.IMAP4_SSL(server)
-        mail.login(user, pw)
+        loginstatus, logincomment = mail.login(user, pw)
+        assert loginstatus == 'OK'
         mail.list()
         # select inbox
         mailinfo = count_mails(mail, MInfo, folder, account, get_summaries)
     except:
-        mailinfo = MInfo(account, None, None)
+        mailinfo = MInfo(account, None, None, None)
     finally:
         if mail.state != 'NONAUTH':
             mail.close()
