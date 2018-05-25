@@ -9,17 +9,16 @@
 # server=yourimapserver.com
 
 from __future__ import print_function
+from email.header import make_header, decode_header
 try:
     from future import standard_library
     standard_library.install_aliases()
-    from builtins import str
 except ImportError:
     # py3
     pass
 import os
 import imaplib
 import email
-from email.header import decode_header
 from email.utils import parseaddr
 from optparse import OptionParser
 from collections import namedtuple
@@ -35,6 +34,7 @@ import threading
 # tuple of shell colour codes
 colmap = namedtuple('ColMap', ['norm', 'white', 'blue', 'yellow', 'green'])
 colm = colmap('\033[0m', '\033[37;1m', '\033[36;1m', '\033[33;1m', '\033[32;1m')
+
 
 def getopts():
     '''returns OptionParser.options for CL switches'''
@@ -107,35 +107,44 @@ def get_mails(mail, msg_ids):
     try:
         for num in msg_ids:
             typ, data = mail.fetch(num, '(RFC822)')
-            msg = email.message_from_string(data[0][1])
+            msg = data[0][1]
+            msg = msg.decode('utf-8')
+            msg = email.message_from_string(msg)
             email_summ = EmailSummary(int(num), clean_address(msg['From']),
                                       clean_subject(msg['Subject']), None)
             msgs.append(email_summ)
-    except:
+    except Exception as ex:
         # if any errors just don't list mails
+        print("error: %s" % ex)
         msgs = []
     return msgs
+
 
 def clean_address(email_addr):
     '''return clean from address'''
     clean_addr = parseaddr(email_addr)
     return unicode_to_str(clean_addr[0] or clean_addr[1])
 
+
 def clean_subject(subj):
     '''decode subject if in unicode format'''
     subj = unicode_to_str(subj)
     # remove newlines
     subj = subj.replace('\r', '')
-    subj = subj.replace('\n', '')   
+    subj = subj.replace('\n', '')
     return subj
 
-def unicode_to_str(chars):
-    '''convert unicode to plain str if required'''
-    # TODO: test for UTF-8 better than below
-    if 'UTF-8' in chars.upper():
-        decd_chars = decode_header(chars)
-        chars = ''.join([ str(t[0], t[1]) for t in decd_chars ]).encode("utf8","ignore")
-    return chars
+
+def unicode_to_str(header):
+    '''convert unicode header to plain str if required'''
+    dh = decode_header(header)
+    try:
+        # py2
+        return ''.join([unicode(t[0], t[1] or 'ASCII') for t in dh])
+    except Exception as ex:
+        # py3
+        return str(make_header(dh))
+
 
 def format_mailsummaries(options, mailinfos, acct_cols):
     '''takes list of MailInfo tuple & returns formatted string of mails'''
@@ -150,6 +159,7 @@ def format_mailsummaries(options, mailinfos, acct_cols):
         for summ in mailinfo.msgs:
             summaries.append('[{acct_spc}{acct}] [{summ.num:04d}] {summ.fromad:25} {summ.subject:40}'.format(acct=account_name, ac_max_len=ac_max_len, summ=summ, acct_spc=acct_spc))
     return "\n".join(summaries)
+
 
 def format_msgcnt(options, mailtotals, acct_cols):
     '''returns string with account overview (read/unread)'''
