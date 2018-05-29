@@ -139,10 +139,11 @@ def unicode_to_str(header):
     '''convert unicode header to plain str if required'''
     dh = decode_header(header)
     try:
-        # py2
-        return ''.join([unicode(t[0], t[1] or 'ASCII') for t in dh])
+        dhstr = ''.join([unicode(t[0], t[1] or
+            'ASCII').encode('utf-8') for t in dh])
+        return dhstr
     except Exception as ex:
-        # py3
+        # unicode not defined - must be py3
         return str(make_header(dh))
 
 
@@ -153,11 +154,15 @@ def format_mailsummaries(options, mailinfos, acct_cols):
     for mailinfo in mailinfos:
         account_name = mailinfo.account
         if options.color:
-            account_name = '%s%s%s' % (acct_cols[account_name], account_name, colm.norm)
+            account_name = '%s%s%s' % (acct_cols[account_name],
+                                       account_name, colm.norm)
         # spaces to pad account name with (colouring breaks padding)
         acct_spc = ' ' * (ac_max_len - len(mailinfo.account))
+        s_fmt = '[{acct_spc}{acct}] [{summ.num:04d}] {summ.fromad:25} {summ.subject:40}'
         for summ in mailinfo.msgs:
-            summaries.append('[{acct_spc}{acct}] [{summ.num:04d}] {summ.fromad:25} {summ.subject:40}'.format(acct=account_name, ac_max_len=ac_max_len, summ=summ, acct_spc=acct_spc))
+            summaries.append(s_fmt.format(acct=account_name,
+                                          ac_max_len=ac_max_len,
+                                          summ=summ, acct_spc=acct_spc))
     return "\n".join(summaries)
 
 
