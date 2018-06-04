@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 # imapchkr.py - checks for new messages in IMAP server
 # (c) James Powell - jamespo [at] gmail [dot] com 2014
@@ -8,27 +8,15 @@
 # password=2347923rbkaa
 # server=yourimapserver.com
 
-from __future__ import print_function
 from email.header import make_header, decode_header
-try:
-    from future import standard_library
-    standard_library.install_aliases()
-except ImportError:
-    # py3
-    pass
 import os
 import imaplib
 import email
 from email.utils import parseaddr
 from optparse import OptionParser
 from collections import namedtuple
-try:
-    import configparser
-    import queue
-except ImportError:
-    # py2
-    import ConfigParser as configparser
-    import Queue as queue
+import configparser
+import queue
 import threading
 
 # tuple of shell colour codes
@@ -40,11 +28,11 @@ def getopts():
     '''returns OptionParser.options for CL switches'''
     parser = OptionParser()
     parser.add_option("-b", help="b/w output", action="store_false",
-                      dest="color", default = True)
+                      dest="color", default=True)
     parser.add_option("-s", help="short output", action="store_true",
-                      dest="short", default = False)
+                      dest="short", default=False)
     parser.add_option("-l", help="list mail summary", action="store_true",
-                      dest="listmail", default = False)
+                      dest="listmail", default=False)
     (options, args) = parser.parse_args()
     return options
 
@@ -137,14 +125,7 @@ def clean_subject(subj):
 
 def unicode_to_str(header):
     '''convert unicode header to plain str if required'''
-    dh = decode_header(header)
-    try:
-        dhstr = ''.join([unicode(t[0], t[1] or
-            'ASCII').encode('utf-8') for t in dh])
-        return dhstr
-    except Exception as ex:
-        # unicode not defined - must be py3
-        return str(make_header(dh))
+    return str(make_header(decode_header(header)))
 
 
 def format_mailsummaries(options, mailinfos, acct_cols):
