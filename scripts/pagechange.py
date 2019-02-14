@@ -11,6 +11,7 @@ import os
 import os.path
 import re
 import cPickle as pickle
+import tempfile
 import time
 from selenium import webdriver
 from selenium.webdriver.common.by import By
@@ -51,6 +52,11 @@ class Page(object):
 
     def __str__(self):
         '''printable representation of self'''
+        # handle missing datetime
+        try:
+            getattr(self, 'datetime')
+        except AttributeError:
+            self.datetime = ''
         return "Title: %s\nOld: (%s)   New: (%s)\nChanged: %s\nURL: %s" \
             % (self.title.encode('utf-8'), self.oldmatch.encode('utf-8'),
                self.match.encode('utf-8'), self.datetime, self.url)
@@ -79,22 +85,35 @@ class PageChange(object):
         self.waittime = 5
         self.xpmatch = None
 
+    @staticmethod
+    def dump_source(source):
+        '''write source to tempfile & return filename'''
+        fh, fname = tempfile.mkstemp(suffix='pchange', text=True)
+        os.write(fh, source)
+        os.close(fh)
+        return fname
+
+
     def check(self, page):
         '''return content in page matching xpath'''
         # insert dummy about to wipe referer
-        self.driver.get('about:')
+        self.driver.get('about:blank')
         self.driver.get(page.url)
         self.driver.implicitly_wait(self.waittime)
+        if os.getenv('DEBUG'):
+            fname = self.dump_source(encode(self.driver.page_source))
+            print 'source html in %s' % fname
         # assert "Python" in driver.title
         self.xpmatch = self.driver.find_element(By.XPATH, page.xpath)
         # cookie cleanup - make optional?
         self.driver.delete_all_cookies()
         return self.xpmatch.text
 
+
     def update_page(self, page, forcesave=False):
         '''updates page object - saves if changed or if forcesave = True'''
-        if page.match == '':
-            raise EmptyMatchException('blank match in %s' % self.driver.title)
+        #if page.match == '':
+        #    raise EmptyMatchException('blank match in %s' % self.driver.title)
         changed = (self.xpmatch.text != page.match)
         if changed or forcesave:
             page.oldmatch = page.match
@@ -141,6 +160,11 @@ def list_pages(savedir):
         print check
         print ''
 
+        
+def encode(s, encoding="ascii", errors="ignore"):
+    '''custom decode function to ignore errors'''
+    return s.encode(encoding=encoding, errors=errors)
+
 
 def check_pages(options):
     '''run all checks & display changed'''
@@ -152,12 +176,12 @@ def check_pages(options):
                 # changed
                 print check
             elif os.getenv('DEBUG'):
-                print 'No change for %s' % check.title.encode('utf-8')
+                print 'No change for %s' % encode(check.title, 'ascii')
         except (NoSuchElementException, StaleElementReferenceException) as e:
             # print '%s failed - error: %s' % (check.title, str(e))
-            print '%s failed - error: %s' % (check.title.encode('utf-8'), e)
+            print '%s failed - error: %s' % (encode(check.title, 'ascii'), e)
         except EmptyMatchException:
-            print "Match returned empty string for %s" % check.title.encode('utf-8')
+            print "Match returned empty string for %s" % encode(check.title, 'ascii')
     pc.driver.close()
 
 

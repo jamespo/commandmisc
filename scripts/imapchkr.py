@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 # imapchkr.py - checks for new messages in IMAP server
 # (c) James Powell - jamespo [at] gmail [dot] com 2014
@@ -8,27 +8,15 @@
 # password=2347923rbkaa
 # server=yourimapserver.com
 
-from __future__ import print_function
 from email.header import make_header, decode_header
-try:
-    from future import standard_library
-    standard_library.install_aliases()
-except ImportError:
-    # py3
-    pass
 import os
 import imaplib
 import email
 from email.utils import parseaddr
 from optparse import OptionParser
 from collections import namedtuple
-try:
-    import configparser
-    import queue
-except ImportError:
-    # py2
-    import ConfigParser as configparser
-    import Queue as queue
+import configparser
+import queue
 import threading
 
 # tuple of shell colour codes
@@ -40,11 +28,11 @@ def getopts():
     '''returns OptionParser.options for CL switches'''
     parser = OptionParser()
     parser.add_option("-b", help="b/w output", action="store_false",
-                      dest="color", default = True)
+                      dest="color", default=True)
     parser.add_option("-s", help="short output", action="store_true",
-                      dest="short", default = False)
+                      dest="short", default=False)
     parser.add_option("-l", help="list mail summary", action="store_true",
-                      dest="listmail", default = False)
+                      dest="listmail", default=False)
     (options, args) = parser.parse_args()
     return options
 
@@ -137,13 +125,7 @@ def clean_subject(subj):
 
 def unicode_to_str(header):
     '''convert unicode header to plain str if required'''
-    dh = decode_header(header)
-    try:
-        # py2
-        return ''.join([unicode(t[0], t[1] or 'ASCII') for t in dh])
-    except Exception as ex:
-        # py3
-        return str(make_header(dh))
+    return str(make_header(decode_header(header)))
 
 
 def format_mailsummaries(options, mailinfos, acct_cols):
@@ -153,11 +135,15 @@ def format_mailsummaries(options, mailinfos, acct_cols):
     for mailinfo in mailinfos:
         account_name = mailinfo.account
         if options.color:
-            account_name = '%s%s%s' % (acct_cols[account_name], account_name, colm.norm)
+            account_name = '%s%s%s' % (acct_cols[account_name],
+                                       account_name, colm.norm)
         # spaces to pad account name with (colouring breaks padding)
         acct_spc = ' ' * (ac_max_len - len(mailinfo.account))
+        s_fmt = '[{acct_spc}{acct}] [{summ.num:04d}] {summ.fromad:25} {summ.subject:40}'
         for summ in mailinfo.msgs:
-            summaries.append('[{acct_spc}{acct}] [{summ.num:04d}] {summ.fromad:25} {summ.subject:40}'.format(acct=account_name, ac_max_len=ac_max_len, summ=summ, acct_spc=acct_spc))
+            summaries.append(s_fmt.format(acct=account_name,
+                                          ac_max_len=ac_max_len,
+                                          summ=summ, acct_spc=acct_spc))
     return "\n".join(summaries)
 
 
