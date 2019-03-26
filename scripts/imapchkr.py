@@ -50,7 +50,11 @@ def checknew(q, account, user, pw, server, get_summaries=False, folder="INBOX"):
     try:
         # connect to mailserver
         mail = imaplib.IMAP4_SSL(server)
-        loginstatus, logincomment = mail.login(user, pw)
+        if server == 'imap.gmail.com':
+            # doesn't support cram_md5
+            loginstatus, logincomment = mail.login(user, pw)
+        else:
+            loginstatus, logincomment = mail.login_cram_md5(user, pw)
         assert loginstatus == 'OK'
         mail.list()
         # select inbox
