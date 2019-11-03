@@ -13,7 +13,7 @@ from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.chrome.options import Options
 
 
-def getcreds():
+def getcreds(debug=False):
     '''get conf from ~/.config/.umaxcreds'''
     config = configparser.RawConfigParser()  # don't interpolate
     config_path = os.path.join(os.path.expanduser("~"), '.config',
@@ -22,15 +22,23 @@ def getcreds():
     return config
 
 
-def main(config):
+def get_browser_location():
+    '''get chromium location'''
+    for loc in (which('chromium'), which('chromium-browser')):
+        if loc is not None:
+            return loc
+
+
+def main(config, debug=False):
     '''log in navigate and reboot'''
     user, pw = config.get('credentials', 'username'), \
         config.get('credentials', 'password')
     domain = config.get('server', 'domain')
 
     chrome_options = Options()
-    # chrome_options.add_argument("--headless")
-    chrome_options.binary_location = which('chromium')
+    if not debug:
+        chrome_options.add_argument("--headless")
+    chrome_options.binary_location = get_browser_location()
     driver = webdriver.Chrome(executable_path=which('chromedriver'),
                               options=chrome_options)
 
@@ -53,13 +61,24 @@ def main(config):
     # TODO: optionally check if server status is Active
     assert 'Reboot' in driver.page_source
 
-    server = driver.find_element_by_partial_link_text('Reboot')
-    server.click()
-
-    assert 'Action Completed Successfully' in driver.page_source
+    if debug != '2':
+        # DEBUG: don't click reboot if DEBUG==2
+        server = driver.find_element_by_partial_link_text('Reboot')
+        server.click()
+        try:
+            assert 'Action Completed Successfully' in driver.page_source
+            print('%s rebooted' % domain)
+        except:
+            print('%s reboot FAILED' % domain)
+    else:
+        print('DEBUG mode - no reboot')
 
 
 if __name__ == "__main__":
-    config = getcreds()
-    main(config)
-    sleep(10)  # DEBUG
+    DEBUG = os.getenv('DEBUG')
+    if DEBUG:
+        print('DEBUG mode %s' % DEBUG)
+    config = getcreds(DEBUG)
+    main(config, DEBUG)
+    if DEBUG:
+        sleep(10)
