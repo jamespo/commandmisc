@@ -81,6 +81,10 @@ def main(config, debug=False):
     else:
         print('DEBUG mode - no reboot')
 
+    if DEBUG:
+        sleep(10)
+    driver.quit()
+
 
 if __name__ == "__main__":
     DEBUG = os.getenv('DEBUG')
@@ -88,5 +92,3 @@ if __name__ == "__main__":
         print('DEBUG mode %s' % DEBUG)
     config = getcreds(DEBUG)
     main(config, DEBUG)
-    if DEBUG:
-        sleep(10)
