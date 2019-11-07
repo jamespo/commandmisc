@@ -81,7 +81,7 @@ def main(config, debug=False):
     else:
         print('DEBUG mode - no reboot')
 
-    if DEBUG:
+    if debug:
         sleep(10)
     driver.quit()
 
