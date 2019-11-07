@@ -3,6 +3,8 @@ commandmisc
 
 random short scripts for Linux / UNIX
 
+umax-restart - Restart a UMax Hosting virtual machine with python & selenium
+
 dd-wrt-dnsmirror - retrieve the /tmp/hosts file from dd-wrt routers running dnsmasq and push the entries to a proper DNS server via dynamic updates
 
 lonlat - lookup longitude & latitude from commandline given town name
