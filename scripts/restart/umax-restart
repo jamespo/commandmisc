@@ -6,6 +6,7 @@
 
 import configparser
 import os.path
+import sys
 from shutil import which
 from time import sleep
 from selenium import webdriver
@@ -13,11 +14,12 @@ from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.chrome.options import Options
 
 
-def getcreds(debug=False):
+def getcreds(config_path=None, debug=False):
     '''get conf from ~/.config/.umaxcreds'''
     config = configparser.RawConfigParser()  # don't interpolate
-    config_path = os.path.join(os.path.expanduser("~"), '.config',
-                               '.umaxcreds')
+    if config_path is None:
+        config_path = os.path.join(os.path.expanduser("~"), '.config',
+                                   '.umaxcreds')
     config.read(config_path)
     return config
 
@@ -90,5 +92,9 @@ if __name__ == "__main__":
     DEBUG = os.getenv('DEBUG')
     if DEBUG:
         print('DEBUG mode %s' % DEBUG)
-    config = getcreds(DEBUG)
+    try:
+        config_path = sys.argv[1]
+    except:
+        config_path = None
+    config = getcreds(config_path, DEBUG)
     main(config, DEBUG)
