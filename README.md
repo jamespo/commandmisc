@@ -3,7 +3,9 @@ commandmisc
 
 random short scripts for Linux / UNIX
 
-umax-restart - Restart a UMax Hosting virtual machine with python & selenium
+check-crt-key.sh - check a private key & certificate match
+
+umax-restart - Restart a UMax Hosting virtual machine with python & selenium (Update 2020: RIP UMax)
 
 dd-wrt-dnsmirror - retrieve the /tmp/hosts file from dd-wrt routers running dnsmasq and push the entries to a proper DNS server via dynamic updates
 
