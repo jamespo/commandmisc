@@ -34,14 +34,11 @@ def pidfile(pidpath = None, mode = 'create'):
     try:
         with open(pidpath) as pidfile:
             pid = int(pidfile.read())
-        try:
-            os.kill(pid, 15)
-        except ProcessLookupError:
-            pass  # that's ok
-    except FileNotFoundError:
-        pass  # good, we don't expect pidfile to exist
+        os.kill(pid, 15)
+    except (FileNotFoundError, ProcessLookupError, ValueError):
+        pass  # doesn't exist or pid invalid
     with open(pidpath, 'w') as pidfile:
-        pidfile.write('10000')
+        pidfile.write(str(os.getpid()))
     
 
 def getopts():
