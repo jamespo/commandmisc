@@ -24,6 +24,26 @@ colmap = namedtuple('ColMap', ['norm', 'white', 'blue', 'yellow', 'green'])
 colm = colmap('\033[0m', '\033[37;1m', '\033[36;1m', '\033[33;1m', '\033[32;1m')
 
 
+def pidfile(pidpath = None, mode = 'create'):
+    '''wipe existing processes, create/wipe pidfile'''
+    if pidpath is None:
+        pidpath = '/tmp/.imapchkr.pid'  # TODO move to home
+    if mode != 'create':
+        os.remove(pidpath)
+        return
+    try:
+        with open(pidpath) as pidfile:
+            pid = int(pidfile.read())
+        try:
+            os.kill(pid, 15)
+        except ProcessLookupError:
+            pass  # that's ok
+    except FileNotFoundError:
+        pass  # good, we don't expect pidfile to exist
+    with open(pidpath, 'w') as pidfile:
+        pidfile.write('10000')
+    
+
 def getopts():
     '''returns OptionParser.options for CL switches'''
     parser = OptionParser()
@@ -174,6 +194,7 @@ def format_msgcnt(options, mailtotals, acct_cols):
 
 def main():
     '''load options, start check threads and display results'''
+    pidfile()
     cmd_options = getopts()
     config = readconf()
     accounts = config.sections()
@@ -197,6 +218,7 @@ def main():
     # display email summaries if chosen and any new mails
     if cmd_options.listmail and any((msg.unread > 0 for msg in mailtotals)):
         print(format_mailsummaries(cmd_options, mailtotals, acct_cols))
+    pidfile(None, 'remove')
 
 if __name__ == '__main__':
     main()
