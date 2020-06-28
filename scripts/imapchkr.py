@@ -7,6 +7,7 @@
 # user=james
 # password=2347923rbkaa
 # server=yourimapserver.com
+# newmail_cmd=/usr/bin/ogg123 /usr/share/sounds/gnome/default/alerts/sonar.ogg
 
 from email.header import make_header, decode_header
 import os
@@ -17,6 +18,8 @@ from optparse import OptionParser
 from collections import namedtuple
 import configparser
 import queue
+import shlex
+import subprocess
 import threading
 
 # tuple of shell colour codes
@@ -24,7 +27,7 @@ colmap = namedtuple('ColMap', ['norm', 'white', 'blue', 'yellow', 'green'])
 colm = colmap('\033[0m', '\033[37;1m', '\033[36;1m', '\033[33;1m', '\033[32;1m')
 
 
-def pidfile(pidpath = None, mode = 'create'):
+def pidfile(pidpath=None, mode='create'):
     '''wipe existing processes, create/wipe pidfile'''
     if pidpath is None:
         pidpath = '/tmp/.imapchkr.pid'  # TODO move to home
@@ -39,7 +42,7 @@ def pidfile(pidpath = None, mode = 'create'):
         pass  # doesn't exist or pid invalid
     with open(pidpath, 'w') as pidfile:
         pidfile.write(str(os.getpid()))
-    
+
 
 def getopts():
     '''returns OptionParser.options for CL switches'''
@@ -189,6 +192,10 @@ def format_msgcnt(options, mailtotals, acct_cols):
     return output
 
 
+def run_cmd(cmd):
+    subprocess.run(shlex.split(cmd), capture_output=True)
+
+
 def main():
     '''load options, start check threads and display results'''
     pidfile()
@@ -201,21 +208,24 @@ def main():
                             config.get(account, 'password'),
                             config.get(account, 'server'))
         t = threading.Thread(target=checknew,
-                             args = (q, account, user, pw, server,
-                                     cmd_options.listmail))
+                             args=(q, account, user, pw, server,
+                                   cmd_options.listmail))
         t.start()
     mailtotals = []
     acct_cols = {}  # dict of account name : colour
     for acct_num, account in enumerate(accounts):
         msg_results = q.get()
+        if config.has_option(account, 'newmail_cmd') and msg_results.unread > 0:
+            run_cmd(config.get(account, 'newmail_cmd'))
         mailtotals.append(msg_results)
         # store colour for account
-        acct_cols[account] = colm[ (acct_num % (len(colm)-2))+2 ]
+        acct_cols[account] = colm[(acct_num % (len(colm)-2))+2]
     print(format_msgcnt(cmd_options, mailtotals, acct_cols))
     # display email summaries if chosen and any new mails
     if cmd_options.listmail and any((msg.unread > 0 for msg in mailtotals)):
         print(format_mailsummaries(cmd_options, mailtotals, acct_cols))
     pidfile(None, 'remove')
+
 
 if __name__ == '__main__':
     main()
