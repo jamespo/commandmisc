@@ -3,6 +3,8 @@ commandmisc
 
 random short scripts for Linux / UNIX
 
+zip2lha.sh - converts WHDLOAD zip files to lha
+
 check-crt-key.sh - check a private key & certificate match
 
 umax-restart - Restart a UMax Hosting virtual machine with python & selenium (Update 2020: RIP UMax)
