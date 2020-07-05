@@ -42,7 +42,7 @@ copysb.sh - copy python script and change shebang to current virtualenv
 pagechange.py - python script to check if HTML page has changed based on XPATH using Selenium
 (can be used with emailifoutput.sh to email on change)
 
-imapchkr.py - biff for IMAPS - supports multiple mailboxes
+imapchkr.py - biff for IMAPS - supports multiple mailboxes - __development has moved to https://github.com/jamespo/imapchkr__
 
 getquote.py - get a stock quote from Google Finance
 
