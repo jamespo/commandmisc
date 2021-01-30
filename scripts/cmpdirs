@@ -1,0 +1,90 @@
+#!/bin/bash
+
+# cmpdirs - compare contents of 2 dirs using rsync when dest is curlftpfs
+# (c) jamespo [at] gmail [dot] com 2021
+# WARNING! This won't handle paths with spaces, funny chars etc
+
+set -e -o pipefail
+
+SRCDIR=$1
+DSTDIR=$2
+RSYNC_ARGS="--delete --size-only -rtvn"
+
+function die {
+    echo "Failed"
+    exit 1
+}
+
+function checkargs {
+    # basic sanity check on args
+    if [[ ! -d "$SRCDIR" ]]; then
+	die
+    fi
+
+    if [[ ! -d "$DSTDIR" ]]; then
+	die
+    fi
+
+    if [[ "$SRCDIR" = "$DSTDIR" ]]; then
+	# pointless
+	die
+    fi
+
+    if [[ "$DSTDIR" = "/" ]]; then
+	# don't hassle /
+	die
+    fi
+}
+
+function fixslash {
+    # append trailing / if not present
+    [[ "${SRCDIR}" != */ ]] && SRCDIR="${SRCDIR}/"
+    [[ "${DSTDIR}" != */ ]] && DSTDIR="${DSTDIR}/"
+}
+
+checkargs
+fixslash
+
+# compare dirs with rsync
+RSYNC_OUT=$(rsync $RSYNC_ARGS $SRCDIR $DSTDIR)
+
+echo "$RSYNC_OUT" # DEBUG
+
+SEEN_DOTSLASH=0
+FILES_TO_DELETE=""
+DIRS_TO_DELETE=""
+FILES_TO_COPY=""
+DIRS_TO_CREATE=""
+
+# loop round & parse rsync output
+while IFS= read -r line; do
+    # check if in "file match" region
+    if [[ "$line" =~ ^$ ]]; then
+	# empty line = end of "transfer"
+	break
+    elif [[ "$line" == './' ]]; then
+	SEEN_DOTSLASH=1
+	echo "seen dotslash"
+	continue
+    fi
+
+    if [[ "$line" =~ ^deleting\ (.+)/$ ]]; then
+	DIRS_TO_DELETE="$DIRS_TO_DELETE ${BASH_REMATCH[1]}"
+    elif [[ "$line" =~ ^deleting\ (.+)$ ]]; then
+	FILES_TO_DELETE="$FILES_TO_DELETE ${BASH_REMATCH[1]}"
+    fi
+
+    if [[ SEEN_DOTSLASH -eq 0 ]]; then
+	# skip until seen ./
+	continue
+    elif  [[ "$line" =~ ^(.+)/$ ]]; then
+	DIRS_TO_CREATE="$DIRS_TO_CREATE ${BASH_REMATCH[1]}"
+    else
+	FILES_TO_COPY="$FILES_TO_COPY $line"
+    fi
+done <<< "$RSYNC_OUT"
+
+echo "FILES_TO_DELETE='${FILES_TO_DELETE}'"
+echo "DIRS_TO_DELETE='${DIRS_TO_DELETE}'"
+echo "FILES_TO_COPY='${FILES_TO_COPY}'"
+echo "DIRS_TO_CREATE='${DIRS_TO_CREATE}'"
