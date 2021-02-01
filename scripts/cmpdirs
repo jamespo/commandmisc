@@ -34,12 +34,14 @@ function checkargs {
 	# don't hassle /
 	die
     fi
+    return 0
 }
 
 function fixslash {
     # append trailing / if not present
     [[ "${SRCDIR}" != */ ]] && SRCDIR="${SRCDIR}/"
     [[ "${DSTDIR}" != */ ]] && DSTDIR="${DSTDIR}/"
+    return 0
 }
 
 checkargs
@@ -48,7 +50,7 @@ fixslash
 # compare dirs with rsync
 RSYNC_OUT=$(rsync $RSYNC_ARGS $SRCDIR $DSTDIR)
 
-echo "$RSYNC_OUT" # DEBUG
+[[ $DEBUG -eq 1 ]] && echo "$RSYNC_OUT"
 
 SEEN_DOTSLASH=0
 FILES_TO_DELETE=""
