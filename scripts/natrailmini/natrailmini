@@ -1,29 +1,21 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # -*- coding:utf-8 -*-
 
 # natrailmini - CLI for National Rail departures
 # based on check_darwin
 #
-# (c) James Powell / jamespo [at] gmail /  2018
+# (c) James Powell / jamespo [at] gmail /  2021
 #
 # requires nre-darwin-py
 # & a configparser format config file in /etc/check_darwin with
 # one section Main with keys wsdl and api_key
 
-from __future__ import print_function
-
 from nredarwin.webservice import DarwinLdbSession
 from optparse import OptionParser
 import os
-try:
-    import configparser
-except ImportError:
-    import ConfigParser as configparser
+import configparser
 import json
-try:
-    from StringIO import StringIO
-except ImportError:
-    from io import StringIO
+from io import StringIO
 
 
 class StationName(object):
@@ -33,8 +25,9 @@ class StationName(object):
     def __init__(self, jsonfile):
         self.code2name_lookup = {}
         self.name2code_lookup = {}
+        # print(jsonfile)
         with open(jsonfile) as jsf:
-            js = json.loads(jsf.read())
+            js = json.load(jsf)   
         for station in js['locations']:
             self.code2name_lookup[station['crs']] = station['name']
             self.name2code_lookup[station['name']] = station['crs']
