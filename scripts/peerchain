@@ -1,0 +1,35 @@
+#!/usr/bin/env python3
+
+# peerchain - show peerchain for TLS connection
+# based on answer from Patrick Mevzek / https://stackoverflow.com/questions/51039393/get-or-build-pem-certificate-chain-in-python
+
+from OpenSSL import SSL
+import socket
+import sys
+
+try:
+   dst = sys.argv[1], 443
+except:
+   print('No hostname supplied - quitting!')
+   sys.exit()
+
+ctx = SSL.Context(SSL.SSLv23_METHOD)
+s = socket.create_connection(dst)
+s = SSL.Connection(ctx, s)
+s.set_connect_state()
+s.set_tlsext_host_name(dst[0].encode('utf-8'))
+
+s.sendall(b'HEAD / HTTP/1.0\n\n')
+s.recv(16)
+
+certs = s.get_peer_cert_chain()
+for pos, cert in enumerate(certs):
+   print("Certificate #" + str(pos))
+   for component in cert.get_subject().get_components():
+       print("Subject %s: %s" % (component))
+   print("notBefore:" + cert.get_notBefore().decode('utf-8'))
+   print("notAfter:" + cert.get_notAfter().decode('utf-8'))
+   print("version:" + str(cert.get_version()))
+   print("sigAlg:" + cert.get_signature_algorithm().decode('utf-8'))
+   print("digest:" + cert.digest('sha256').decode('utf-8'))
+   print("")
