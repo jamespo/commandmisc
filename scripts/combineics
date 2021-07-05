@@ -1,0 +1,62 @@
+#!/usr/bin/env python3
+
+# combineics - combine multiple ics files into one
+
+import os
+import sys
+
+def getfiles(icsdir):
+    '''return all ics files in dir'''
+    try:
+        return [ ics for ics in os.listdir(icsdir) if ics[-4:] == '.ics' ]
+    except:
+        return []
+
+def bye(msg):
+    print(msg)
+    sys.exit(1)
+
+def geticsfile(icsfile, firstfile):
+    output = ''
+    with open(icsfile) as ics:
+        if firstfile:
+            for line in ics:
+                if line.strip() != 'END:VCALENDAR':
+                    output = output + line
+        else:
+            inevent = False
+            for line in ics:
+                if line.strip() == 'BEGIN:VEVENT':
+                    output = output + line
+                    inevent = True
+                elif line.strip() == 'END:VEVENT':
+                    output = output + line
+                    break
+                elif inevent:
+                    output = output + line
+    return output
+
+def writeical(icsfiles, icsdir, icalfile):
+    firstfile = True
+    with open(icalfile, 'w') as ical:
+        for icsfile in icsfiles:
+            output = geticsfile(os.path.join(icsdir, icsfile), firstfile)
+            firstfile = False
+            ical.write(output)
+        ical.write("END:VCALENDAR\n")
+
+def main():
+    try:
+        icsdir, icalfile = sys.argv[1], sys.argv[2]
+    except:
+        bye("USAGE: combineics [ics dir] [ical output file]")
+    icsfiles = getfiles(icsdir)
+    if len(icsfiles) == 0:
+        bye("No ics files found")
+    # print(icsfiles)
+    writeical(icsfiles, icsdir, icalfile)
+
+
+if __name__ == '__main__':
+    main()
+
