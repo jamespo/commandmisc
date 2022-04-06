@@ -8,6 +8,11 @@ USAGE="USAGE: chk-crt-key.sh [cert file] [key file]"
 
 OPENSSL=/usr/bin/openssl
 
+if [[ "$#" -ne 2 ]]; then
+    echo $USAGE
+    exit 1
+fi
+
 CERT=$1
 KEY=$2
 
