@@ -8,11 +8,18 @@ import socket
 import sys
 
 try:
-   dst = sys.argv[1], 443
+   host = sys.argv[1]
 except:
-   print('No hostname supplied - quitting!')
-   sys.exit()
+   print('No hostname supplied. USAGE: peerchain host [port]!')
+   sys.exit(2)
 
+try:
+   port = sys.argv[2]
+except:
+   port = 443
+   
+dst = host, port
+   
 ctx = SSL.Context(SSL.SSLv23_METHOD)
 s = socket.create_connection(dst)
 s = SSL.Connection(ctx, s)
@@ -22,16 +29,17 @@ s.set_tlsext_host_name(dst[0].encode('utf-8'))
 s.sendall(b'HEAD / HTTP/1.0\n\n')
 s.recv(16)
 
-print("Host: %s\n\n" % dst[0])
+print("Host: %s\n" % dst[0])
 
 certs = s.get_peer_cert_chain()
 for pos, cert in enumerate(certs):
    print("Certificate #" + str(pos))
    for component in cert.get_subject().get_components():
-       print("Subject %s: %s" % (component))
-   print("notBefore:" + cert.get_notBefore().decode('utf-8'))
-   print("notAfter:" + cert.get_notAfter().decode('utf-8'))
-   print("version:" + str(cert.get_version()))
+      print("%s: %s" % (component[0].decode('utf-8'),
+                                component[1].decode('utf-8')))
+   print("notBefore: " + cert.get_notBefore().decode('utf-8'))
+   print("notAfter: " + cert.get_notAfter().decode('utf-8'))
+   print("version: " + str(cert.get_version()))
    print("sigAlg:" + cert.get_signature_algorithm().decode('utf-8'))
-   print("digest:" + cert.digest('sha256').decode('utf-8'))
+   print("digest: " + cert.digest('sha256').decode('utf-8'))
    print("")
