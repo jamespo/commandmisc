@@ -1,0 +1,8 @@
+#!/bin/bash
+
+# update-reboot - reboot if updated libs/kernel & no patching occurring
+
+if [[ ! -f /var/run/yum.pid && $(needs-restarting -r >/dev/null) ]]; then
+    logger "update-reboot rebooting"
+    reboot
+fi
