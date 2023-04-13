@@ -1,0 +1,12 @@
+[Unit]
+Description=Service Restart
+After=network-online.target
+
+[Service]
+Type=simple
+ExecStart=/usr/local/bin/check-systemd-socket.sh %I
+StandardOutput=file:/var/log/check-systemd-socket-%I.log
+StandardError=file:/var/log/check-systemd-socket-%I.log
+
+[Install]
+WantedBy=multi-user.target
