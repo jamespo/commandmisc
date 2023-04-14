@@ -3,6 +3,10 @@ commandmisc
 
 random short scripts for Linux / UNIX
 
+check_steam_update - check if a Linux steam game / server requires an update
+
+acme-renewhook.sh - script to run in acme.sh le_renewhook to deploy certs & (optionally) restart services
+
 zip2lha.sh - converts WHDLOAD zip files to lha
 
 check-crt-key.sh - check a private key & certificate match

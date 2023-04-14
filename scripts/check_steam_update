@@ -1,0 +1,28 @@
+#!/bin/bash
+
+# check_steam_update
+# USAGE: check_steam_update [game install dir]
+
+set -euo pipefail
+
+INSTALLDIR=$1
+BRANCH=experimental
+
+test -d "$INSTALLDIR/steamapps" || exit 2
+
+APPID=$(find "$INSTALLDIR/steamapps/" -name '*.acf' | perl -ne '/appmanifest_(\d+)\.acf/ && print $1')
+
+BUILDID=$(grep buildid "$INSTALLDIR/steamapps/appmanifest_$APPID.acf" | perl -ne '/(\d+)/ && print $1')
+
+LATESTBUILDID=$(curl -s "https://api.steamcmd.net/v1/info/$APPID" | jq ".data.\"$APPID\".depots.branches.$BRANCH.buildid|tonumber")
+
+echo "AppID: $APPID Current Build ID: $BUILDID Latest Build ID: $LATESTBUILDID"
+
+if [[ $BUILDID -lt $LATESTBUILDID ]]; then
+    echo "Update required: yes"
+    exit 0
+else
+    echo "Update required: no"
+    exit 1
+fi
+
