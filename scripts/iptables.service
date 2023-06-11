@@ -1,0 +1,14 @@
+[Unit]
+Description=Restore iptables firewall rules
+Before=network.target
+Conflicts=shutdown.target
+
+[Service]
+Type=oneshot
+ExecStart=/sbin/iptables-restore /etc/iptables.rules
+ExecStop=/sbin/iptables -F
+ExecReload=/sbin/iptables-restore /etc/iptables.rules
+RemainAfterExit=yes
+
+[Install]
+WantedBy=basic.target
