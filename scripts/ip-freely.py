@@ -37,10 +37,14 @@ def getargs():
 def create_nsupdate_contents(server, domain, hostname, newip, ttl, currentip):
     '''create file for nsupdate command'''
     if currentip != newip:
-        pass
+        # remove existing record
+        del_line = f'update delete {hostname}. A {currentip}'
+    else:
+        del_line = ''
     content=f'''server {server}.
 debug yes
 zone {domain}.
+{del_line}
 update add {hostname}. {ttl} A {newip}
 show
 send'''
