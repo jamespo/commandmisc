@@ -1,4 +1,4 @@
-#!/usr/bin/python3
+#!/bin/env python3
 
 # ip-freely - update IP address based on results from ipify
 # USAGE: ip-freely.py -s ns1.domain.net -n myhome.domain.net -p ~/.priv/domain.net.+157+10183.key
@@ -12,6 +12,7 @@ import certifi
 import re
 import tempfile
 from subprocess import Popen, PIPE
+from nslookup import Nslookup
 from socket import getaddrinfo
 
 
@@ -34,24 +35,22 @@ def getargs():
     return parser.parse_args()
 
 
-def create_nsupdate_contents(server, domain, hostname, newip, ttl, currentip):
+def create_nsupdate_contents(server, domain, hostname, newip, ttl, currentips):
     '''create file for nsupdate command'''
-    if currentip != newip:
-        # remove existing record
-        del_line = f'update delete {hostname}. A {currentip}'
-    else:
-        del_line = ''
+    # remove existing records if they exist
+    del_line = "\n".join([f'update delete {hostname}. A {ip}' for ip in currentips])
     content=f'''server {server}.
 debug yes
 zone {domain}.
 {del_line}
 update add {hostname}. {ttl} A {newip}
 show
-send'''
+send
+quit'''
     nsfile = tempfile.NamedTemporaryFile(mode='w', delete=False)
     with nsfile:
         nsfile.write(content)
-    if DEBUG is not None:
+    if DEBUG:
         print("---\n%s\n---\n" % content)
     return nsfile.name
 
@@ -81,33 +80,37 @@ def get_remote_ip(remoteiplookup):
             cert_reqs='CERT_REQUIRED',
             ca_certs=certifi.where())
         r = http.request("GET", remoteiplookup)
-        ip = r.data.decode("utf-8")
+        ip = r.data.decode("utf-8").strip()
+        assert is_ip(ip)
+        return ip
     except Exception as exc:
         # http req failed
         if DEBUG:
-            print('get_remote_ip: %s' % exc)
-        return None
-    # ensure output looks like an IP address
-    if DEBUG:
-        print('remote ip is %s' % ip)
-    if is_ip(ip):
-        return ip
-    else:
+            print('get_remote_ip exception: %s' % exc)
         return None
 
 
-def get_current_ip(hostname):
-    '''return current IP for hostname'''
+def get_current_ips(hostname, server):
+    '''return current IP(s) for hostname from updating DNS server'''
     try:
-        ip = getaddrinfo(hostname, 80)[-1][-1][0]
+        # if dns server is not an ip get the IP
+        if not is_ip(server):
+            server = getaddrinfo(server, 80)[-1][-1][0]
+            if DEBUG:
+                print('get_current_ip: dns server ip: %s' % server)
+        dns_server = Nslookup(dns_servers=[server], verbose=False, tcp=False)
+        dns_query = dns_server.dns_lookup(hostname)
+        ips = dns_query.answer
         if DEBUG:
-            print('%s is %s' % (hostname, ip))
-        if is_ip(ip):
-            return ip
-        else:
-            return None
+            print('get_current_ip: current record: %s' % ips)
+        # ensure returned records look ok
+        assert all(is_ip(ip) for ip in ips)
     except:
-        return None
+        ips = []
+    finally:
+        if DEBUG:
+            print('get_current_ip: %s is %s' % (hostname, ips))
+        return ips
 
 
 def main():
@@ -119,15 +122,16 @@ def main():
     ip = get_remote_ip(args.remoteiplookup)
     if ip is None:
         sys.exit('Invalid IP returned')
-    currentip = get_current_ip(args.hostname)
-    if (ip == currentip) and not args.force:
+    currentips = get_current_ips(args.hostname, args.server)
+    # don't update if record same as new IP
+    if (set([ip]) == set(currentips)) and not args.force:
         if DEBUG:
             print('%s is %s - unchanged. No update' % (args.hostname, ip))
         sys.exit()
     # get domain from hostname
     domain = '.'.join(args.hostname.split('.')[1:])
     conffile = create_nsupdate_contents(args.server, domain, args.hostname,
-                                        ip, args.ttl, currentip)
+                                        ip, args.ttl, currentips)
     (stdout, stderr, rc) = run_nsupdate(args.exe, args.privkey, conffile)
     os.remove(conffile)
     if rc != 0:
