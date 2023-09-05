@@ -53,3 +53,5 @@ getquote.py - get a stock quote from Google Finance
 smtpsend.py - simple SMTP sender, like mailx
 
 clamsmtp-action.py - VirusAction script for clamsmtp
+
+natrailmini - returns National Rail timetable between two stations
