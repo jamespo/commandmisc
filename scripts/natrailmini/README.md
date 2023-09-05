@@ -13,7 +13,7 @@ Usage
 
 Get an API key from http://realtime.nationalrail.co.uk/OpenLDBWSRegistration
 
-Get a stations JSON file from https://github.com/fasteroute/national-rail-stations/blob/master/stations.json (cut this down to just the stations you need)
+Get a stations JSON file from https://github.com/fasteroute/national-rail-stations/blob/master/stations.json (cut this down to just the stations you need - see mini-stations.json example)
 
 Create /etc/check_darwin as below:
 

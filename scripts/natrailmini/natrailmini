@@ -22,12 +22,13 @@ class StationName(object):
     '''converts station to name & vice versa'''
     # use json in format of https://github.com/fasteroute/national-rail-stations/blob/master/stations.json
     # (suggest cutting this down for actual use)
+
     def __init__(self, jsonfile):
         self.code2name_lookup = {}
         self.name2code_lookup = {}
         # print(jsonfile)
         with open(jsonfile) as jsf:
-            js = json.load(jsf)   
+            js = json.load(jsf)
         for station in js['locations']:
             self.code2name_lookup[station['crs']] = station['name']
             self.name2code_lookup[station['name']] = station['crs']
@@ -36,17 +37,18 @@ class StationName(object):
         '''take name return code (blank if not found)'''
         return self.name2code_lookup.get(name, '')
 
-
     def code2name(self, code):
         '''take code return name (blank if not found)'''
-        return self.code2name_lookup,get(name, '')
+        return self.code2name_lookup.get(code, '')
 
 
 def readconf():
     '''read config file'''
     config = configparser.ConfigParser()
-    config.read(['/etc/check_darwin', os.path.expanduser('~/.config/.check_darwin')])
+    config.read(
+        ['/etc/check_darwin', os.path.expanduser('~/.config/.check_darwin')])
     return (config.get('Main', 'api_key'), config.get('Main', 'wsdl'))
+
 
 def create_session(api_key, wsdl):
     '''create darwin session'''
@@ -67,7 +69,7 @@ def find_trains(darwin_sess, from_stn, to_stn, st_n):
             if st_n.name2code(calling_point.location_name) == to_stn:
                 trains_onroute.append(train)
                 break
-    # returns zip of [(train time,'On time'),] 
+    # returns zip of [(train time,'On time'),]
     return zip([trn.std for trn in trains_onroute],
                [trn.etd for trn in trains_onroute])
 
@@ -80,7 +82,7 @@ def output_small(from_stn, to_stn, timetable):
             output.append(trn_time)
         else:
             output.append("!%s" % trn_time)
-    return  "%s>%s: %s" % (from_stn, to_stn, ', '.join(output))
+    return "%s>%s: %s" % (from_stn, to_stn, ', '.join(output))
 
 
 def get_cli_options():
@@ -91,14 +93,16 @@ def get_cli_options():
                       dest="to_stn", default=None)
     parser.add_option("-j", "--jsonfile", help="Station to code lookup file",
                       dest="jsonfile", default="stations.json")
-    (options, args) = parser.parse_args()
+    parser.add_option("-o", "--outputtype", help="Output type (txt|json)",
+                      dest="outputtype", default="txt")
+    options, _ = parser.parse_args()
     if options.from_stn is None or options.to_stn is None:
         return (None, None, None)
     else:
         return (options.from_stn.upper(), options.to_stn.upper(),
                 options.jsonfile)
 
-    
+
 # start of main program
 def main():
     from_stn, to_stn, jsonfile = get_cli_options()

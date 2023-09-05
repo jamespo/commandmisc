@@ -1,0 +1,53 @@
+{
+    "locations": [
+        {
+            "lat": 51.559106197898565,
+            "tiploc": "UPMNSP6",
+            "name": "Upminster",
+            "crs": "UPM",
+            "toc": "CC",
+            "lon": 0.25088392480396865
+	},
+        {
+	    "lat": 51.574827138719535,
+	    "tiploc": "ROMFORD",
+            "name": "Romford",
+	    "crs": "RMF",
+            "toc": "XR",
+            "lon": 0.18323735368656954
+	},
+        {
+            "lat": 51.51253481634216,
+	    "tiploc": "LIMHSE",
+            "name": "Limehouse",
+            "crs": "LHS",
+            "toc": "CC",
+            "lon": -0.039802861988681146
+	},
+	{
+            "lat": 51.51164396451521,
+	    "tiploc": "FENCHRS",
+            "name": "London Fenchurch Street",
+            "crs": "FST",
+            "toc": "RT",
+	    "lon": -0.07889676336960706
+	},
+	{
+	    "lat": 51.541893184624854,
+            "tiploc": "STFD",
+	    "name": "Stratford (London)",
+            "crs": "SRA",
+            "toc": "XR",
+	    "lon": -0.0033967355799776923
+	},
+       {
+            "lat": 51.51798916063051,
+            "tiploc": "LIVST",
+            "name": "London Liverpool Street",
+            "crs": "LST",
+            "toc": "RT",
+            "lon": -0.08142601994463783
+       }
+    ]
+}
+
