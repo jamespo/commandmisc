@@ -93,19 +93,19 @@ def get_cli_options():
                       dest="to_stn", default=None)
     parser.add_option("-j", "--jsonfile", help="Station to code lookup file",
                       dest="jsonfile", default="stations.json")
-    parser.add_option("-o", "--outputtype", help="Output type (txt|json)",
-                      dest="outputtype", default="txt")
+    parser.add_option("-o", "--outputformat", help="Output format (txt|json)",
+                      dest="outputformat", default="txt")
     options, _ = parser.parse_args()
-    if options.from_stn is None or options.to_stn is None:
-        return (None, None, None)
+    if None in (options.from_stn, options.to_stn):
+        return (None, None, None, None)
     else:
         return (options.from_stn.upper(), options.to_stn.upper(),
-                options.jsonfile)
+                options.jsonfile, options.outputformat)
 
 
 # start of main program
 def main():
-    from_stn, to_stn, jsonfile = get_cli_options()
+    from_stn, to_stn, jsonfile, oformat = get_cli_options()
     st_n = StationName(jsonfile)
     if None in (from_stn, to_stn):
         status = 'Invalid arguments'
@@ -113,7 +113,11 @@ def main():
         api_key, wsdl = readconf()
         sess = create_session(api_key, wsdl)
         train_details = find_trains(sess, from_stn, to_stn, st_n)
-        status = output_small(from_stn, to_stn, train_details)
+        if oformat == "txt":
+            status = output_small(from_stn, to_stn, train_details)
+        else:
+            # JSON
+            pass
     print(status)
 
 
