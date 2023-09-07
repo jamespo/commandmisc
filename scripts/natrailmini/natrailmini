@@ -85,6 +85,19 @@ def output_small(from_stn, to_stn, timetable):
     return "%s>%s: %s" % (from_stn, to_stn, ', '.join(output))
 
 
+def output_json(from_stn, to_stn, timetable):
+    '''JSON output'''
+    times = { 'from' : from_stn,
+              'to'   : to_stn }
+    for cnt, (trn_time, trn_ontime) in enumerate(timetable):
+        if trn_ontime == 'On time':
+            times["time%s" % cnt] = trn_time
+        else:
+            times["time%s" % cnt] = "!%s" % trn_time
+    return json.dumps(times)
+
+
+
 def get_cli_options():
     parser = OptionParser()
     parser.add_option("-f", "--from", help="Departure Station Code (from)",
@@ -117,7 +130,7 @@ def main():
             status = output_small(from_stn, to_stn, train_details)
         else:
             # JSON
-            pass
+            status = output_json(from_stn, to_stn, train_details)
     print(status)
 
 
