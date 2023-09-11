@@ -10,6 +10,7 @@
 # & a configparser format config file in /etc/check_darwin with
 # one section Main with keys wsdl and api_key
 
+from datetime import datetime
 from nredarwin.webservice import DarwinLdbSession
 from optparse import OptionParser
 import os
@@ -85,17 +86,16 @@ def output_small(from_stn, to_stn, timetable):
     return "%s>%s: %s" % (from_stn, to_stn, ', '.join(output))
 
 
-def output_json(from_stn, to_stn, timetable):
-    '''JSON output'''
-    times = { 'from' : from_stn,
-              'to'   : to_stn }
+def output_dict(from_stn, to_stn, timetable):
+    '''output dict to later turn to JSON'''
+    times = {'from': from_stn,
+             'to': to_stn}
     for cnt, (trn_time, trn_ontime) in enumerate(timetable):
         if trn_ontime == 'On time':
             times["time%s" % cnt] = trn_time
         else:
             times["time%s" % cnt] = "!%s" % trn_time
-    return json.dumps(times)
-
+    return times
 
 
 def get_cli_options():
@@ -130,7 +130,11 @@ def main():
             status = output_small(from_stn, to_stn, train_details)
         else:
             # JSON
-            status = output_json(from_stn, to_stn, train_details)
+            times = output_dict(from_stn, to_stn, train_details)
+            # add generation timestamp
+            now = datetime.now()
+            times["ttable_timestamp"] = now.strftime("%d/%m/%Y %H:%M:%S")
+            status = json.dumps(times)
     print(status)
 
 
