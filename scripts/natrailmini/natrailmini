@@ -94,7 +94,7 @@ def output_dict(from_stn, to_stn, timetable):
         if trn_ontime == 'On time':
             times["time%s" % cnt] = trn_time
         else:
-            times["time%s" % cnt] = "!%s" % trn_time
+            times["time%s" % cnt] = "!%s (%s)" % (trn_time, trn_ontime)
     return times
 
 
