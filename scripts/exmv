@@ -2,7 +2,7 @@
 
 # exmv - EXtract & MoVe
 
-ARCFILE=$1
+ARCFILE=$(realpath "$1")
 DESTPATH="${2:-$EXMVPATH}"
 
 USAGE="exmv [archivefile] [destpath]"
@@ -25,6 +25,8 @@ testdir () {
 testargs
 testdir
 
+# TODO: if files already in dir, don't create new one
+
 # strip dir & extension from $ARCFILE
 BAREPATH=$(basename "$ARCFILE")
 NEWDIR="${BAREPATH%.*}"
@@ -33,7 +35,7 @@ NEWFULLDIR="$DESTPATH/$NEWDIR"
 mkdir "$NEWFULLDIR" || exit 6
 cd "$NEWFULLDIR" || exit 3
 
-unrar x "$ARCFILE" || exit 5
+unrar x "$ORIGDIR/$ARCFILE" || exit 5
 
 rm "$ARCFILE"
 
