@@ -1,0 +1,40 @@
+#!/bin/bash
+
+# exmv - EXtract & MoVe
+
+ARCFILE=$1
+DESTPATH="${2:-$EXMVPATH}"
+
+USAGE="exmv [archivefile] [destpath]"
+
+testargs () {
+    if [[ ! -f "$ARCFILE" ]]; then
+	echo "Bad file"
+	exit 1
+    fi
+}
+
+testdir () {
+    if [[ ! -d "$DESTPATH" ]]; then
+	echo "Bad dir"
+	exit 2
+    fi
+}
+
+
+testargs
+testdir
+
+# strip dir & extension from $ARCFILE
+BAREPATH=$(basename "$ARCFILE")
+NEWDIR="${BAREPATH%.*}"
+NEWFULLDIR="$DESTPATH/$NEWDIR"
+
+mkdir "$NEWFULLDIR" || exit 6
+cd "$NEWFULLDIR" || exit 3
+
+unrar x "$ARCFILE" || exit 5
+
+rm "$ARCFILE"
+
+exit
