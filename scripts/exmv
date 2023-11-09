@@ -37,6 +37,14 @@ cd "$NEWFULLDIR" || exit 3
 
 unrar x "$ORIGDIR/$ARCFILE" || exit 5
 
+# check if subdirectories, if so flatten files
+find . -maxdepth 1 -mindepth 1 -type d -print0 | while read -d $'\0' subdir
+do
+    # don't care about filename clash for now
+    mv "$subdir"/* .
+    rmdir "$subdir"
+done
+
 rm "$ARCFILE"
 
 exit
