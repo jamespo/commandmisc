@@ -4,6 +4,7 @@
 
 ARCFILE=$(realpath "$1")
 DESTPATH="${2:-$EXMVPATH}"
+TMPDIR="$HOME/.tmp"
 
 USAGE="exmv [archivefile] [destpath]"
 
@@ -30,9 +31,11 @@ testdir
 # strip dir & extension from $ARCFILE
 BAREPATH=$(basename "$ARCFILE")
 NEWDIR="${BAREPATH%.*}"
-NEWFULLDIR="$DESTPATH/$NEWDIR"
+NEWFULLDIR="$TMPDIR/$NEWDIR"
 
+test -d "$TMPDIR" || mkdir "$TMPDIR" || exit 6
 mkdir "$NEWFULLDIR" || exit 6
+chmod 755 "$NEWFULLDIR"
 cd "$NEWFULLDIR" || exit 3
 
 unrar x "$ORIGDIR/$ARCFILE" || exit 5
@@ -45,6 +48,9 @@ do
     rmdir "$subdir"
 done
 
-rm "$ARCFILE"
+mv "$NEWFULLDIR" "$DESTPATH/" || exit 7
+
+rm "$ARCFILE" || echo "Can't remove $ARCFILE"
+rmdir "$TMPDIR" || echo "Can't remove $TMPDIR"
 
 exit
