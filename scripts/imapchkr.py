@@ -12,6 +12,7 @@
 from email.header import make_header, decode_header
 import os
 import imaplib
+import datetime
 import email
 from email.utils import parseaddr
 from optparse import OptionParser
@@ -25,7 +26,7 @@ import threading
 # tuple of shell colour codes
 colmap = namedtuple('ColMap', ['norm', 'white', 'blue', 'yellow', 'green'])
 colm = colmap('\033[0m', '\033[37;1m', '\033[36;1m', '\033[33;1m', '\033[32;1m')
-
+debug = None
 
 def pidfile(pidpath=None, mode='create'):
     '''wipe existing processes, create/wipe pidfile'''
@@ -66,15 +67,18 @@ def readconf():
 
 def checknew(q, account, user, pw, server, get_summaries=False, folder="INBOX"):
     '''puts namedtuple Mailinfo with summary of mailbox contents on q'''
+    if debug:
+        print('DEBUG: started checknew %s at %s' %
+            (account, datetime.datetime.now()))
     MInfo = namedtuple('Mailinfo', ['account', 'unread', 'total', 'msgs'])
     try:
         # connect to mailserver
         mail = imaplib.IMAP4_SSL(server)
         if 'AUTH=CRAM-MD5' in mail.capabilities:
             # use cram_md5 for auth
-            loginstatus, logincomment = mail.login_cram_md5(user, pw)
+            loginstatus, _ = mail.login_cram_md5(user, pw)
         else:
-            loginstatus, logincomment = mail.login(user, pw)
+            loginstatus, _ = mail.login(user, pw)
         assert loginstatus == 'OK'
         mail.list()
         # select inbox
@@ -86,7 +90,9 @@ def checknew(q, account, user, pw, server, get_summaries=False, folder="INBOX"):
             mail.close()
         mail.logout()
     q.put(mailinfo)
-
+    if debug:
+        print('DEBUG: completed checknew %s at %s' %
+              (account, datetime.datetime.now()))
 
 def count_mails(mail, MInfo, folder, account, get_summaries):
     '''count the mails & return MailInfo tuple'''
@@ -198,6 +204,9 @@ def run_cmd(cmd):
 
 def main():
     '''load options, start check threads and display results'''
+    global debug
+    if os.getenv('DEBUG'):
+        debug = 1
     pidfile()
     cmd_options = getopts()
     config = readconf()
