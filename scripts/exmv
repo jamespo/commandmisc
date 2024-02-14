@@ -8,6 +8,8 @@ TMPDIR="$HOME/.tmp"
 
 USAGE="exmv [archivefile] [destpath]"
 
+umask 002
+
 testargs () {
     if [[ ! -f "$ARCFILE" ]]; then
 	echo "Bad file"
