@@ -89,11 +89,15 @@ def output_small(from_stn, to_stn, timetable):
 def output_dict(from_stn, to_stn, timetable):
     '''output dict to later turn to JSON'''
     times = {'from': from_stn,
-             'to': to_stn}
+             'to': to_stn,
+             'late_trains': 0,
+             'ontime_trains': 0}
     for cnt, (trn_time, trn_ontime) in enumerate(timetable):
         if trn_ontime == 'On time':
+            times["ontime_trains"] += 1
             times["time%s" % cnt] = trn_time
         else:
+            times["late_trains"] += 1
             times["time%s" % cnt] = "!%s (%s)" % (trn_time, trn_ontime)
     return times
 
