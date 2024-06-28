@@ -41,6 +41,23 @@ def save_cache(content, cachepath):
         cp.write(content)
 
 
+def display_score(score_json):
+    try:
+        for group in score_json['eventGroups'][0]['secondaryGroups']:
+            for event in group['events']:
+                score_txt = '%s %s: %s %s - %s %s' % (
+                    event['date']['isoDate'],
+                    event['date']['time'],
+                    event['home']['shortName'],
+                    event['home'].get('scoreUnconfirmed', '_'),
+                    event['away']['shortName'],
+                    event['away'].get('scoreUnconfirmed', '_')
+                )
+                print(score_txt)
+    except (IndexError, KeyError):
+        print('No games today')
+
+
 def main():
     args = getargs()
     cache_path = os.path.expanduser(f"~/.cache/footscore/content_{args.date}.json")
@@ -57,17 +74,8 @@ def main():
         score_req = requests.get(URL)
         score_json = json.loads(score_req.content)
         save_cache(score_req.content, cache_path)
-    logger.debug(score_json)
-    try:
-        for group in score_json['eventGroups'][0]['secondaryGroups']:
-            for event in group['events']:
-                score_txt = '%s %s - %s %s' % (event['home']['shortName'],
-                                               event['home'].get('scoreUnconfirmed', '_'),
-                                               event['away']['shortName'],
-                                               event['away'].get('scoreUnconfirmed', '_'))
-                print(score_txt)
-    except IndexError:
-        print('No games today')
+    logger.debug(json.dumps(score_json, indent=2))
+    display_score(score_json)
 
 if __name__ == '__main__':
     if os.getenv("FPDEBUG"):
