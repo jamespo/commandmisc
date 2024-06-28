@@ -20,6 +20,8 @@ def getargs():
                         help='date (default: current %s)' % current_date)
     parser.add_argument('--ttl', default=60, type=int,
                         help='cache TTL in seconds (default: 60)')
+    parser.add_argument('--days', type=int, default=1,
+                        help='# of days to show (default=1)')
     return parser.parse_args()
 
 
@@ -43,19 +45,28 @@ def save_cache(content, cachepath):
 
 def display_score(score_json):
     try:
-        for group in score_json['eventGroups'][0]['secondaryGroups']:
-            for event in group['events']:
-                score_txt = '%s %s: %s %s - %s %s' % (
-                    event['date']['isoDate'],
-                    event['date']['time'],
-                    event['home']['shortName'],
-                    event['home'].get('scoreUnconfirmed', '_'),
-                    event['away']['shortName'],
-                    event['away'].get('scoreUnconfirmed', '_')
-                )
-                print(score_txt)
+        for eventgroup in score_json['eventGroups']:
+            for group_2 in eventgroup['secondaryGroups']:
+                for event in group_2['events']:
+                    score_txt = '%s %s: %s %s - %s %s' % (
+                        event['date']['isoDate'],
+                        event['date']['time'],
+                        event['home']['shortName'],
+                        event['home'].get('scoreUnconfirmed', '_'),
+                        event['away']['shortName'],
+                        event['away'].get('scoreUnconfirmed', '_')
+                    )
+                    print(score_txt)
     except (IndexError, KeyError):
         print('No games today')
+
+
+def calc_enddate(date, days):
+    """calculate date +n days"""
+    # days is 1-indexed
+    dt_date = datetime.datetime.strptime(date, "%Y-%m-%d")
+    end_date = dt_date + datetime.timedelta(days-1)
+    return end_date.strftime(format='%Y-%m-%d')
 
 
 def main():
@@ -69,7 +80,9 @@ def main():
         score_json = json.loads(score_cache)
     else:
         # cache expired - load fresh
-        URL = f"https://web-cdn.api.bbci.co.uk/wc-poll-data/container/sport-data-scores-fixtures?selectedEndDate={args.date}&selectedStartDate={args.date}&todayDate={args.date}&urn=urn%3Abbc%3Asportsdata%3Afootball%3Atournament%3Aeuropean-championship&useSdApi=false"
+        end_date = calc_enddate(args.date, args.days)
+        logger.debug('end date: %s' % end_date)
+        URL = f"https://web-cdn.api.bbci.co.uk/wc-poll-data/container/sport-data-scores-fixtures?selectedEndDate={end_date}&selectedStartDate={args.date}&todayDate={args.date}&urn=urn%3Abbc%3Asportsdata%3Afootball%3Atournament%3Aeuropean-championship&useSdApi=false"
         logger.debug(URL)
         score_req = requests.get(URL)
         score_json = json.loads(score_req.content)
