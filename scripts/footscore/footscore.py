@@ -39,11 +39,15 @@ def load_cache(cachepath, ttl):
 
 
 def save_cache(content, cachepath):
-    with open(cachepath, 'wb') as cp:
-        cp.write(content)
+    try:
+        with open(cachepath, 'wb') as cp:
+            cp.write(content)
+    except FileNotFoundError:
+        logger.debug("%s not available to save cache" % cachepath)
 
 
 def display_score(score_json):
+    """extract scores from JSON"""
     try:
         for eventgroup in score_json['eventGroups']:
             for group_2 in eventgroup['secondaryGroups']:
@@ -73,6 +77,7 @@ def main():
     args = getargs()
     cache_path = os.path.expanduser(f"~/.cache/footscore/content_{args.date}.json")
     score_cache = None
+    # check cache, download scores if not available
     if os.path.isfile(cache_path):
         logger.debug('loading from cache')
         score_cache = load_cache(cache_path, args.ttl)
