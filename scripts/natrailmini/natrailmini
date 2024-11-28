@@ -13,10 +13,11 @@
 from datetime import datetime
 from nredarwin.webservice import DarwinLdbSession
 from optparse import OptionParser
+from io import StringIO
 import os
 import configparser
 import json
-from io import StringIO
+import sys
 
 
 class StationName(object):
@@ -64,7 +65,10 @@ def find_trains(darwin_sess, from_stn, to_stn, st_n):
     trains_onroute = []
     for train in trains:
         # TODO: cache these details by service_id
-        train_details = darwin_sess.get_service_details(train.service_id)
+        try:
+            train_details = darwin_sess.get_service_details(train.service_id)
+        except TimeoutError:
+            quit('Timed out')
         for calling_point in train_details.subsequent_calling_point_lists[0].calling_points:
             # print calling_point.location_name
             if st_n.name2code(calling_point.location_name) == to_stn:
@@ -105,9 +109,9 @@ def output_dict(from_stn, to_stn, timetable):
 def get_cli_options():
     parser = OptionParser()
     parser.add_option("-f", "--from", help="Departure Station Code (from)",
-                      dest="from_stn", default=None)
+                      dest="from_stn", default='')
     parser.add_option("-t", "--to", help="Destination Station Code (to)",
-                      dest="to_stn", default=None)
+                      dest="to_stn", default='')
     parser.add_option("-j", "--jsonfile", help="Station to code lookup file",
                       dest="jsonfile", default="stations.json")
     parser.add_option("-o", "--outputformat", help="Output format (txt|json)",
@@ -120,12 +124,18 @@ def get_cli_options():
                 options.jsonfile, options.outputformat)
 
 
+def quit(err_msg):
+    '''quit with err_msg'''
+    print(err_msg, file=sys.stderr)
+    sys.exit(1)
+
+
 # start of main program
 def main():
     from_stn, to_stn, jsonfile, oformat = get_cli_options()
     st_n = StationName(jsonfile)
-    if None in (from_stn, to_stn):
-        status = 'Invalid arguments'
+    if '' in (from_stn, to_stn):
+        quit('Invalid arguments')
     else:
         api_key, wsdl = readconf()
         sess = create_session(api_key, wsdl)
@@ -139,7 +149,7 @@ def main():
             now = datetime.now()
             times["ttable_timestamp"] = now.strftime("%d/%m/%Y %H:%M:%S")
             status = json.dumps(times)
-    print(status)
+        print(status)
 
 
 if __name__ == "__main__":
