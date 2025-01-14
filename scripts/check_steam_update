@@ -5,8 +5,8 @@
 
 set -euo pipefail
 
-INSTALLDIR=$1
-BRANCH=experimental
+INSTALLDIR=${1:-$HOME/7days}
+BRANCH=${2:-public}
 
 test -d "$INSTALLDIR/steamapps" || exit 2
 
@@ -14,7 +14,7 @@ APPID=$(find "$INSTALLDIR/steamapps/" -name '*.acf' | perl -ne '/appmanifest_(\d
 
 BUILDID=$(grep buildid "$INSTALLDIR/steamapps/appmanifest_$APPID.acf" | perl -ne '/(\d+)/ && print $1')
 
-LATESTBUILDID=$(curl -s "https://api.steamcmd.net/v1/info/$APPID" | jq ".data.\"$APPID\".depots.branches.$BRANCH.buildid|tonumber")
+LATESTBUILDID=$(curl -s "https://api.steamcmd.net/v1/info/$APPID" | jq ".data.\"$APPID\".depots.branches.\"$BRANCH\".buildid|tonumber")
 
 echo "AppID: $APPID Current Build ID: $BUILDID Latest Build ID: $LATESTBUILDID"
 
