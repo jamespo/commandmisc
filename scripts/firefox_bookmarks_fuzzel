@@ -1,0 +1,30 @@
+#!/bin/bash
+
+# firefox_bookmarks_fuzzel - based on https://gist.githubusercontent.com/intrntbrn/cdb590090a9fcd0d0d32ae24092ab42a/raw/19f1ccc6de2778a45f613461dc1690de5ec3b9c9/firefox_bookmarks
+
+# menu (dmenu, rofi, fzf, etc.)
+menu_cmd='fuzzel --counter --dmenu -w 80'
+
+# browser
+browser_cmd='firefox --new-tab'
+
+# in case the automatic profile detection does not work properly,
+# replace <PROFILE> with your profile id (e.g. ik52yqxf.default-1574488801337) and uncomment
+#bookmarks_folder=~/.mozilla/firefox/<PROFILE>/weave
+
+# search for profile folder if not specified
+if [[ -z "$bookmarks_folder" ]]; then
+    bookmarks_folder=$(find ~/.mozilla/firefox/ -maxdepth 2 -type d | grep -E 'default.*weave' | grep -v -E 'nightly$' | awk 'NR==1')
+    if [[ -z "$bookmarks_folder" ]]; then
+	echo "unable to detect firefox profile. please specify manually in source."
+	exit 1
+    fi
+fi
+
+# fetch all bookmark records, show menu and open selected bookmark in browser
+# sqlite FORMAT requires sqlite 3.38.0+
+sqlite3 -readonly "${bookmarks_folder}"/bookmarks.sqlite "SELECT FORMAT('%-30s', SUBSTR(i.title,0,30)), u.url FROM items i, urls u WHERE (i.urlId = u.id) AND u.url LIKE 'http%' ORDER BY u.url" \
+| sed 's/|http/\thttp/' \
+| $menu_cmd \
+| grep -Eo '(http|https)://.*' \
+| xargs -r -I {} $browser_cmd {}
