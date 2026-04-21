@@ -4,7 +4,7 @@
 # return 0 if plugged in, 1 otherwise
 # if argument supplied run it
 
-UPOWERPATH=/org/freedesktop/UPower/devices/line_power_ADP0
+UPOWERPATH=$(upower --enumerate | grep -P 'line_power_([A-Z]|[0-9]){1,5}$')
 
 pluggedin=$(upower -i $UPOWERPATH | grep -P 'online.*yes')
 
