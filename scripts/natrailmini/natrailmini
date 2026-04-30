@@ -13,7 +13,7 @@
 from datetime import datetime
 from nredarwin.webservice import DarwinLdbSession
 from optparse import OptionParser
-from io import StringIO
+from retrying import retry
 import os
 import configparser
 import json
@@ -52,11 +52,12 @@ def readconf():
     return (config.get('Main', 'api_key'), config.get('Main', 'wsdl'))
 
 
+@retry(stop_max_attempt_number=2, wait_fixed=5000)
 def create_session(api_key, wsdl):
     '''create darwin session'''
     return DarwinLdbSession(wsdl=wsdl, api_key=api_key)
 
-
+@retry(stop_max_attempt_number=2, wait_fixed=5000)
 def find_trains(darwin_sess, from_stn, to_stn, st_n):
     '''find trains between to & from stations'''
     board = darwin_sess.get_station_board(from_stn)
@@ -65,10 +66,8 @@ def find_trains(darwin_sess, from_stn, to_stn, st_n):
     trains_onroute = []
     for train in trains:
         # TODO: cache these details by service_id
-        try:
-            train_details = darwin_sess.get_service_details(train.service_id)
-        except TimeoutError:
-            quit('Timed out')
+        train_details = darwin_sess.get_service_details(train.service_id)
+
         for calling_point in train_details.subsequent_calling_point_lists[0].calling_points:
             # print calling_point.location_name
             if st_n.name2code(calling_point.location_name) == to_stn:
