@@ -23,7 +23,7 @@ fi
 
 # fetch all bookmark records, show menu and open selected bookmark in browser
 # sqlite FORMAT requires sqlite 3.38.0+
-sqlite3 -readonly "${bookmarks_folder}"/bookmarks.sqlite "SELECT FORMAT('%-30s', SUBSTR(i.title,0,30)), u.url FROM items i, urls u WHERE (i.urlId = u.id) AND u.url LIKE 'http%' ORDER BY u.url" \
+sqlite3 -readonly "file:${bookmarks_folder}/bookmarks.sqlite?immutable=1" "SELECT FORMAT('%-30s', SUBSTR(i.title,0,30)), u.url FROM items i, urls u WHERE (i.urlId = u.id) AND u.url LIKE 'http%' ORDER BY u.url" \
 | sed 's/|http/\thttp/' \
 | $menu_cmd \
 | grep -Eo '(http|https)://.*' \
