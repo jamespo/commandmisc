@@ -18,7 +18,7 @@ Get a stations JSON file from https://github.com/fasteroute/national-rail-statio
 Create /etc/check_darwin as below:
 
 	[Main]
-	wsdl: https://lite.realtime.nationalrail.co.uk/OpenLDBWS/wsdl.aspx?ver=2017-02-02
+	wsdl: https://lite.realtime.nationalrail.co.uk/OpenLDBWS/wsdl.aspx
 	api_key: api-key-you-got
 
 
